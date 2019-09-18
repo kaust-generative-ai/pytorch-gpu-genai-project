@@ -1,0 +1,10 @@
+name: null
+
+channels:
+  - defaults
+
+dependencies:
+  - jupyterlab=1.0
+  - py-xgboost-gpu=0.90
+  - python=3.6
+  
