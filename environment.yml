@@ -1,10 +1,14 @@
 name: null
 
 channels:
+  - pytorch
+  - conda-forge
   - defaults
 
 dependencies:
+  - cudatoolkit=10.0
   - jupyterlab=1.0
-  - py-xgboost-gpu=0.90
   - python=3.6
+  - pytorch=1.2
+  - torchvision=0.4
   

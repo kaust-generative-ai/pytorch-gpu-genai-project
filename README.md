@@ -1,6 +1,6 @@
 # python-gpu-data-science-project
 
-Repository containing scaffolding for a Python 3-based data science project with GPU acceleration. 
+Repository containing scaffolding for a Python 3-based data science project with GPU acceleration using the [PyTorch](https://pytorch.org/) ecosystem. 
 
 ## Creating a new project from this template
 
