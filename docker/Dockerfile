@@ -1,6 +1,6 @@
 FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu16.04
 
-MAINTAINER pughdr <david.pugh@kaust.edu.sa>
+LABEL maintainer="pughdr <david.pugh@kaust.edu.sa>"
 
 SHELL [ "/bin/bash", "-c" ]
 
