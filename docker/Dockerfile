@@ -36,7 +36,7 @@ RUN chown $UID:$GID /usr/local/bin/docker-entrypoint.sh && \
 
 USER ${USER}
 
-ENV MINICONDA_VERSION 4.6.14
+ENV MINICONDA_VERSION 4.7.10
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -O ~/miniconda.sh && \
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b && \
