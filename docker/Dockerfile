@@ -10,9 +10,9 @@ RUN apt-get update --fix-missing && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-ARG username
-ARG uid
-ARG gid
+ARG username=al-khawarizmi
+ARG uid=1000
+ARG gid=100
 ENV USER ${username}
 ENV UID ${uid}
 ENV GID ${gid}
@@ -25,16 +25,14 @@ RUN adduser --disabled-password \
     --home $HOME \
     $USER
 
+USER ${USER}
+
 ARG environment
-COPY ${environment} /usr/tmp/environment.yml
-RUN chown $UID:$GID /usr/tmp/environment.yml
+COPY --chown=$UID:$GID ${environment} /usr/tmp/environment.yml
 
 ARG entrypoint
-COPY ${entrypoint} /usr/local/bin/docker-entrypoint.sh
-RUN chown $UID:$GID /usr/local/bin/docker-entrypoint.sh && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
-
-USER ${USER}
+COPY --chown=$UID:$GID ${entrypoint} /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENV MINICONDA_VERSION 4.7.10
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -O ~/miniconda.sh && \
