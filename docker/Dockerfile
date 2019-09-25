@@ -25,14 +25,18 @@ RUN adduser --disabled-password \
     --home $HOME \
     $USER
 
-USER ${USER}
-
+# Dockerhub not yet supporting COPY --chown $UID:$GID syntax
 ARG environment
-COPY --chown=$UID:$GID ${environment} /usr/tmp/environment.yml
+COPY ${environment} /usr/tmp/environment.yml
+RUN chown $UID:$GID /usr/tmp/environment.yml
 
 ARG entrypoint
-COPY --chown=$UID:$GID ${entrypoint} /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY ${entrypoint} /usr/local/bin/docker-entrypoint.sh
+RUN chown $UID:$GID /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# install Miniconda as non-root user
+USER $USER
 
 ENV MINICONDA_VERSION 4.7.10
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -O ~/miniconda.sh && \
