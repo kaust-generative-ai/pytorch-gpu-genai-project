@@ -6,7 +6,6 @@ docker image build \
     --build-arg uid=1000 \
     --build-arg gid=100 \
     --build-arg environment=environment.yml \
-    --build-arg entrypoint=docker/entrypoint.sh \
     --tag "$DOCKER_REPO:latest" \
     --file Dockerfile \
     ../

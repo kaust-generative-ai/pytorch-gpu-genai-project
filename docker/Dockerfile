@@ -30,8 +30,7 @@ ARG environment
 COPY ${environment} /usr/tmp/environment.yml
 RUN chown $UID:$GID /usr/tmp/environment.yml
 
-ARG entrypoint
-COPY ${entrypoint} /usr/local/bin/docker-entrypoint.sh
+COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chown $UID:$GID /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
 
