@@ -7,7 +7,6 @@ services:
         - username=${USER}
         - uid=${UID}
         - gid=${GID}
-        - environment=environment.yml
       context: ../
       dockerfile: docker/Dockerfile
     ports:

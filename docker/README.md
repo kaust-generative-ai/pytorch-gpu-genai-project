@@ -26,7 +26,6 @@ $ docker image build \
   --build-arg username=$USER \
   --build-arg uid=$UID \
   --build-arg gid=$GID \
-  --build-arg environment=environment.yml \
   --file Dockerfile \
   --tag $IMAGE_NAME:$IMAGE_TAG \
   ../

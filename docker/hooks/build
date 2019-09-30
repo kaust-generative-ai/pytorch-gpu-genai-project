@@ -5,7 +5,6 @@ docker image build \
     --build-arg username=al-khawarizmi \
     --build-arg uid=1000 \
     --build-arg gid=100 \
-    --build-arg environment=environment.yml \
     --tag "$DOCKER_REPO:latest" \
     --file Dockerfile \
     ../

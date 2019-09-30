@@ -26,8 +26,7 @@ RUN adduser --disabled-password \
     $USER
 
 # Dockerhub not yet supporting COPY --chown $UID:$GID syntax
-ARG environment
-COPY ${environment} /usr/tmp/environment.yml
+COPY environment.yml /usr/tmp/environment.yml
 RUN chown $UID:$GID /usr/tmp/environment.yml
 
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
