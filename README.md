@@ -53,7 +53,7 @@ $ conda env update --prefix ./env --file environment.yml --prune
 
 ### Listing the full contents of the Conda environment
 
-The list of explicit dependencies for the project are listed in the `environmen.yml` file. Too see the full lost of packages installed into the environment run the following command.
+The list of explicit dependencies for the project are listed in the `environment.yml` file. Too see the full lost of packages installed into the environment run the following command.
 
 ```bash
 conda list --prefix ./env
