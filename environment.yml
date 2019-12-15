@@ -8,6 +8,10 @@ channels:
 dependencies:
   - cudatoolkit=10.1
   - jupyterlab=1.2
+  - nodejs=12.13
+  - pip=19.3
+  - pip:
+    - jupyterlab-nvdashboard==0.1.*
   - python=3.7
   - pytorch=1.3
   - torchvision=0.4
