@@ -50,11 +50,17 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERS
 RUN mkdir $HOME/app
 WORKDIR $HOME/app
 
+ENV CONDA_PREFIX ./env
 RUN ~/miniconda3/bin/conda update --name base --channel defaults conda && \
-    ~/miniconda3/bin/conda env create --prefix ./env --file /tmp/environment.yml && \
+    ~/miniconda3/bin/conda env create --prefix $CONDA_PREFIX --file /tmp/environment.yml && \
     ~/miniconda3/bin/conda clean --all --yes
-RUN source ~/miniconda3/bin/activate ./env && \
+
+ENV HOROVOD_CUDA_HOME $CONDA_PREFIX
+ENV HOROVOD_NCCL_HOME $CONDA_PREFX
+ENV HOROVOD_GPU_ALLREDUCE NCCL
+RUN source ~/miniconda3/bin/activate $CONDA_PREFIX && \
     /usr/local/postBuild.sh && \
+    pip install horovod==0.18.* --no-cache-dir && \
     source ~/miniconda3/bin/deactivate
 
 # use an entrypoint script to insure conda environment is properly activated at runtime
