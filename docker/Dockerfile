@@ -1,11 +1,11 @@
-FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu16.04
+FROM nvidia/cuda:10.1-base-ubuntu16.04
 
 LABEL maintainer="pughdr <david.pugh@kaust.edu.sa>"
 
 SHELL [ "/bin/bash", "-c" ]
 
 RUN apt-get update --fix-missing && \
-    apt-get install -y wget bzip2 curl git && \
+    apt-get install -y wget bzip2 curl git gcc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -29,6 +29,10 @@ RUN adduser --disabled-password \
 COPY environment.yml /tmp/environment.yml
 RUN chown $UID:$GID /tmp/environment.yml
 
+COPY postBuild /usr/local/postBuild.sh
+RUN chown $UID:$GID /usr/local/postBuild.sh && \
+    chmod +x /usr/local/postBuild.sh
+
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chown $UID:$GID /usr/local/bin/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/docker-entrypoint.sh
@@ -49,6 +53,9 @@ WORKDIR $HOME/app
 RUN ~/miniconda3/bin/conda update --name base --channel defaults conda && \
     ~/miniconda3/bin/conda env create --prefix ./env --file /tmp/environment.yml && \
     ~/miniconda3/bin/conda clean --all --yes
+RUN source ~/miniconda3/bin/activate ./env && \
+    /usr/local/postBuild.sh && \
+    source ~/miniconda3/bin/deactivate
 
 # use an entrypoint script to insure conda environment is properly activated at runtime
 ENTRYPOINT [ "/usr/local/bin/docker-entrypoint.sh" ]
