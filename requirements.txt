@@ -1,0 +1,2 @@
+horovod==0.18.*
+jupyterlab-nvdashboard==0.1.*
