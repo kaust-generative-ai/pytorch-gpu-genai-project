@@ -64,8 +64,7 @@ ENV HOROVOD_GPU_ALLREDUCE NCCL
 RUN conda update --name base --channel defaults conda && \
     conda env create --prefix $ENV_PREFIX --file /tmp/environment.yml --force && \
     conda activate $ENV_PREFIX && \
-    pip install --requirement /tmp/requirements.txt && \
-    /usr/local/bin/postBuild && \
+    . /usr/local/bin/postBuild && \
     conda clean --all --yes
 
 # use an entrypoint script to insure conda environment is properly activated at runtime
