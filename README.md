@@ -105,7 +105,7 @@ after the environment has already been created, then you can re-create the envir
 following command.
 
 ```bash
-$ conda env create --prefix #ENV_PREFIX --file environment.yml --force
+$ conda env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
 ## Using Docker
