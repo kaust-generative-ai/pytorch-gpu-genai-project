@@ -1,5 +1,6 @@
 horovod==0.18.*
 jupyterlab-nvdashboard==0.1.*
+jupyterlab_sql==0.3.*
 
 # make sure horovod is re-compiled if environment is re-built
 --no-binary=horovod
