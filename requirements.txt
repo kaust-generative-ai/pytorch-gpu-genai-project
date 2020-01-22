@@ -1,4 +1,4 @@
-horovod==0.18.*
+horovod==0.19.*
 jupyterlab-nvdashboard==0.1.*
 jupyterlab_sql==0.3.*
 
