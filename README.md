@@ -21,18 +21,48 @@ Project organization is based on ideas from [_Good Enough Practices for Scientif
 9. Put project source code in the `src` directory.
 10. Name all files to reflect their content or function.
 
+## Installing NVIDIA CUDA Toolkit
+
+### Workstation
+
+You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
+of the NVIDIA CUDA Toolkit installed on your workstation. For PyTorch you should install 
+[NVIDIA CUDA Toolkit 10.1](https://developer.nvidia.com/cuda-10.1-download-archive-update2) 
+[(documentation)](https://docs.nvidia.com/cuda/archive/10.1/).
+
+After installing the appropriate version of the NVIDIA CUDA Toolkit you will need to set the 
+following environment variables.
+
+```bash
+$ export CUDA_HOME=/usr/local/cuda-10.1
+$ export PATH=$CUDA_HOME/bin:$PATH
+$ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+```
+
+### Ibex
+
+Ibex users do not neet to install NVIDIA CUDA Toolkit as the relevant versions have already been 
+made available on Ibex by the Ibex Systems team. Users simply need to load the appropriate version 
+using the `module` tool. 
+
+```bash
+$ module load cuda/10.1.243
+```
+
 ## Building the Conda environment
 
-After adding any necessary dependencies that should be downloaded via `conda` to the `environment.yml` file 
-and any dependencies that should be downloaded via `pip` to the `requirements.txt` file you create the 
-Conda environment in a sub-directory `./env`of your project directory by running the following commands.
+After adding any necessary dependencies that should be downloaded via `conda` to the 
+`environment.yml` file and any dependencies that should be downloaded via `pip` to the 
+`requirements.txt` file you create the Conda environment in a sub-directory `./env`of your project 
+directory by running the following commands.
 
 ```bash
 $ export ENV_PREFIX=$PWD/env
-$ export HOROVOD_CUDA_HOME=$ENV_PREFIX
+$ export HOROVOD_CUDA_HOME=$CUDA_HOME
 $ export HOROVOD_NCCL_HOME=$ENV_PREFIX
-$ export HOROVOD_GPU_ALLREDUCE=NCCL 
-$ conda env create --prefix $ENV_PREFIX --file environment.yml
+$ export HOROVOD_GPU_ALLREDUCE=NCCL
+$ export HOROVOD_GPU_BROADCAST=NCCL
+$ conda env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
 Once the new environment has been created you can activate the environment with the following 
@@ -70,7 +100,7 @@ $ conda activate $ENV_PREFIX # optional if environment already active
 You should see output similar to the following.
 
 ```
-Horovod v0.18.2:
+Horovod v0.19.0:
 
 Available Frameworks:
     [ ] TensorFlow
@@ -84,7 +114,7 @@ Available Controllers:
 Available Tensor Operations:
     [X] NCCL
     [ ] DDL
-    [ ] MLSL
+    [ ] CCL
     [X] MPI
     [X] Gloo  
 ```
