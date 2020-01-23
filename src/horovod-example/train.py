@@ -1,61 +1,101 @@
 import argparse
+import os
 import pathlib
 
+import horovod.torch as hvd
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils import data
 from torchvision import datasets, transforms, models
-import horovod.torch as hvd
 
 
 parser = argparse.ArgumentParser(description="PyTorch + Horovod distributed training benchmark")
-parser.add_argument('--data-dir', type=str, help='path to ILSVR data')
-_help = """
-number of batches processed locally before executing allreduce across workers; 
-it multiplies total batch size.
-"""
-parser.add_argument('--batches-per-allreduce', type=int, default=1, help=_help)
+parser.add_argument("--data-dir",
+                    type=str,
+                    help="Path to ILSVR data")
+parser.add_argument("--read-checkpoints-from",
+                    type=str,
+                    help="Path to a directory containing existing checkpoints")
+parser.add_argument("--write-checkpoints-to",
+                    type=str,
+                    help="Path to the directory where checkpoints should be written")
+parser.add_argument('--batches-per-allreduce',
+                    type=int,
+                    default=1,
+                    help="number of batches processed locally before executing allreduce across workers")
 
-# Default settings from https://arxiv.org/abs/1706.02677.
-parser.add_argument('--batch-size', type=int, default=32, help='input batch size for training')
-parser.add_argument('--val-batch-size', type=int, default=32, help='input batch size for validation')
-parser.add_argument('--epochs', type=int, default=90, help='number of epochs to train')
-parser.add_argument('--base-lr', type=float, default=1.25e-2, help='learning rate for a single GPU')
-parser.add_argument('--momentum', type=float, default=0.9, help='SGD momentum')
-parser.add_argument('--weight-decay', type=float, default=5e-5, help='weight decay')
-parser.add_argument('--seed', type=int, default=42, help='random seed')
+# Most default settings from https://arxiv.org/abs/1706.02677.
+parser.add_argument("--batch-size",
+                    type=int,
+                    default=256,
+                    help="input batch size for training")
+parser.add_argument("--base-batch-size",
+                    type=int,
+                    default=32,
+                    help="batch size used to determine number of effective GPUs")
+parser.add_argument("--val-batch-size",
+                    type=int,
+                    default=32,
+                    help="input batch size for validation")
+parser.add_argument("--warmup-epochs",
+                    type=float,
+                    default=5,
+                    help="number of warmup epochs")
+parser.add_argument("--epochs",
+                    type=int,
+                    default=90,
+                    help="number of epochs to train")
+parser.add_argument("--base-lr",
+                    type=float,
+                    default=1.25e-2,
+                    help="learning rate for a single GPU")
+parser.add_argument("--max-lr",
+                    type=float,
+                    default=1e-2,
+                    help="max learning rate for one-cycle scheduler")
+parser.add_argument("--momentum",
+                    type=float,
+                    default=0.9,
+                    help="SGD momentum")
+parser.add_argument("--weight-decay",
+                    type=float,
+                    default=5e-5,
+                    help="weight decay")
+parser.add_argument("--seed",
+                    type=int,
+                    default=42,
+                    help="random seed")
 args = parser.parse_args()
 
+# initialize horovod
+hvd.init()
+torch.manual_seed(args.seed)
+torch.cuda.set_device(hvd.local_rank()) # Horovod: pin GPU to local rank.
+torch.cuda.manual_seed(args.seed)
 
-# Horovod: using `lr = base_lr * hvd.size()` from the very beginning leads to worse final
-# accuracy. Scale the learning rate `lr = base_lr` ---> `lr = base_lr * hvd.size()` during
-# the first five epochs. See https://arxiv.org/abs/1706.02677 for details.
-# After the warmup reduce learning rate by 10 on the 30th, 60th and 80th epochs.
-def adjust_learning_rate(epoch, batch_idx):
-    if epoch < args.warmup_epochs:
-        epoch += float(batch_idx + 1) / len(train_loader)
-        lr_adj = 1. / hvd.size() * (epoch * (hvd.size() - 1) / args.warmup_epochs + 1)
-    elif epoch < 30:
-        lr_adj = 1.
-    elif epoch < 60:
-        lr_adj = 1e-1
-    elif epoch < 80:
-        lr_adj = 1e-2
-    else:
-        lr_adj = 1e-3
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = args.base_lr * hvd.size() * args.batches_per_allreduce * lr_adj
+# create required directories
+data_dir = pathlib.Path(args.data_dir)
+training_dir = data_dir / "train"
+validation_dir = data_dir / "val"
+checkpoints_logging_dir = pathlib.Path(args.write_checkpoints_to)
 
+# define constants used in data preprocessing
+resized_img_width, resized_img_height = 256, 256
+target_img_width, target_img_height = 224, 224
+n_training_images = 1281167
+n_validation_images = 50000
+n_testing_images = 100000
 
-def _partial_fit(model_fn, loss_fn, X_batch, y_batch, opt):
+def _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch):
     # forward pass
     loss = loss_fn(model_fn(X_batch), y_batch)
 
     # back propagation
     loss.backward()
-    opt.step()
-    opt.zero_grad() # don't forget to reset the gradient after each batch!
+    optimizer.step()
+    optimizer.zero_grad() # don't forget to reset the gradient after each batch!
 
 
 def _validate(model_fn, loss_fn, validation_data_loader):
@@ -66,25 +106,23 @@ def _validate(model_fn, loss_fn, validation_data_loader):
             print(f"Training epoch: {epoch}, Validation loss: {validation_loss}")
 
 
-def fit(model_fn, loss_fn, training_data_loader, opt, validation_data_loader=None, number_epochs=2):
+def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, rank, initial_epoch, number_epochs):
     
-    for epoch in range(number_epochs):
+    for epoch in range(initial_epoch, number_epochs):
         model_fn.train()
         for X_batch, y_batch in training_data_loader:
-            _partial_fit(model_fn, loss_fn, X_batch, y_batch, opt)
+            _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch)
+            lr_scheduler.step()
+        _validate(model_fn, loss_fn, validation_data_loader)
         
-        # compute validation loss after each training epoch
-        if validation_data_loader is not None:
-            _validate(model_fn, loss_fn, validation_data_loader)
+        # only checkpoint on rank 0 worker to avoid corruption of checkpoint data
+        if rank == 0:
+            _checkpoint = {"model_state_dict": model_fn.state_dict(),
+                           "optimizer_state_dict": optimizer.state_dict()}
+            torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pth")
 
 
-hvd.init()
-torch.manual_seed(args.seed)
-torch.cuda.set_device(hvd.local_rank()) # Horovod: pin GPU to local rank.
-torch.cuda.manual_seed(args.seed)
-
-# create data sets
-data_dir = pathlib.Path(args.data_dir)
+# create training and validation data sets
 _train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),
     transforms.RandomHorizontalFlip(),
@@ -101,14 +139,13 @@ _val_transform = transforms.Compose([
 ])
 val_dataset = datasets.ImageFolder(data_dir / "val", transform=_val_transform)
 
-# Horovod: use DistributedSampler to partition data among workers. Manually specify
-# `num_replicas=hvd.size()` and `rank=hvd.rank()`.
+# use DistributedSampler to partition data among workers
 train_sampler = (data.distributed
                      .DistributedSampler(train_dataset, num_replicas=hvd.size(), rank=hvd.rank()))
 val_sampler = (data.distributed
                    .DistributedSampler(val_dataset, num_replicas=hvd.size(), rank=hvd.rank()))
 
-# create data loaders 
+# create training and validation data loaders
 class WrappedDataLoader:
     
     def __init__(self, data_loader, f):
@@ -137,28 +174,67 @@ _data_to_gpu = lambda X, y: (X.cuda(), y.cuda())
 train_data_loader = WrappedDataLoader(_train_data_loader, _data_to_gpu)
 val_data_loader = WrappedDataLoader(_val_data_loader, _data_to_gpu)
 
-# Set up standard ResNet-50 model.
+# set up standard ResNet-50 model.
 model_fn = (models.resnet50()
                   .cuda())
-
 loss_fn = F.cross_entropy
             
-# Horovod: scale learning rate by the number of GPUs.
+# adjust initial learning rate based on number of "effective GPUs".
+_global_batch_size = args.batch_size * args.batches_per_allreduce * hvd.size()
+_n_effective_gpus = _global_batch_size // args.base_batch_size 
+_initial_lr = args.base_lr * _n_effective_gpus 
 _optimizer = optim.SGD(model_fn.parameters(),
-                       lr=args.base_lr,
+                       lr=_initial_lr,
                        momentum=args.momentum,
                        weight_decay=args.weight_decay)
+distributed_optimizer = hvd.DistributedOptimizer(_optimizer,
+                                                 named_parameters=model_fn.named_parameters(),
+                                                 backward_passes_per_step=args.batches_per_allreduce)
 
-# Horovod: wrap optimizer with DistributedOptimizer.
-optimizer = hvd.DistributedOptimizer(_optimizer,
-                                     named_parameters=model_fn.named_parameters(),
-                                     backward_passes_per_step=args.batches_per_allreduce)
+# define learning rate scheduler
+_lr_scheduler_kwargs = {
+    "pct_start": 0.3,
+    "anneal_strategy": "cos",
+    "cycle_momentum": True,
+    "base_momentum": 0.85,
+    "max_momentum": 0.95,
+    "div_factor": 25.0,
+    "final_div_factor": 10000.0,
+    "last_epoch": -1
+}
+one_cycle_lr = (torch.optim
+                     .lr_scheduler
+                     .OneCycleLR(distributed_optimizer,
+                                 max_lr=args.max_lr,
+                                 epochs=args.epochs,
+                                 steps_per_epoch=n_training_images // (args.batch_size * hvd.size()),
+                                 **_lr_scheduler_kwargs))
 
-# Horovod: broadcast parameters & optimizer state.
+# only rank 0 worker should restore from checkpoint
+_initial_epoch = 0
+if hvd.rank() == 0:
+    
+    # Look for a pre-existing checkpoint from which to resume training
+    existing_checkpoints_dir = pathlib.Path(args.read_checkpoints_from)
+    for _most_recent_epoch in range(args.epochs, 0, -1):
+        _checkpoint_filepath = f"{existing_checkpoints_dir}/checkpoint-epoch-{_most_recent_epoch:02d}.pth"
+        if os.path.exists(_checkpoint_filepath):
+            _checkpoint = torch.load(_checkpoint_filepath)
+            model_fn.load_state_dict(_checkpoint["model_state_dict"])
+            distributed_optimizer.load_state_dict(_checkpoint["optimizer_state_dict"])
+            _initial_epoch = _most_recent_epoch
+            break
+    
+# broadcast initial epoch from rank 0 (which will have checkpoints) to other ranks.
+initial_epoch = (hvd.broadcast(torch.tensor(_initial_epoch), root_rank=0)
+                    .item())
+
+# broadcast parameters & optimizer state from rank 0 to all other ranks
 hvd.broadcast_parameters(model_fn.state_dict(), root_rank=0)
-hvd.broadcast_optimizer_state(optimizer, root_rank=0)
+hvd.broadcast_optimizer_state(distributed_optimizer, root_rank=0)
 
-fit(model_fn, loss_fn, train_data_loader, optimizer, val_data_loader, number_epochs=args.epochs)
+# run the training loop
+fit(model_fn, loss_fn, distributed_optimizer, one_cycle_lr, train_data_loader, val_data_loader, hvd.rank(), initial_epoch, args.epochs)
 
 
 
