@@ -81,12 +81,14 @@ training_dir = data_dir / "train"
 validation_dir = data_dir / "val"
 checkpoints_logging_dir = pathlib.Path(args.write_checkpoints_to)
 
+        
 # define constants used in data preprocessing
 resized_img_width, resized_img_height = 256, 256
 target_img_width, target_img_height = 224, 224
 n_training_images = 1281167
 n_validation_images = 50000
 n_testing_images = 100000
+
 
 def _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch):
     # forward pass
@@ -98,28 +100,33 @@ def _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch):
     optimizer.zero_grad() # don't forget to reset the gradient after each batch!
 
 
-def _validate(model_fn, loss_fn, validation_data_loader):
-        model_fn.eval()
-        with torch.no_grad():
-            batch_losses, batch_sizes = zip(*[(loss_fn(model_fn(X), y), len(X)) for X, y in validation_data_loader])
-            validation_loss = np.sum(np.multiply(batch_losses, batch_sizes)) / np.sum(batch_sizes)
-            print(f"Training epoch: {epoch}, Validation loss: {validation_loss}")
+def _compute_validation_loss(model_fn, loss_fn, validation_data_loader):
+    with torch.no_grad():
+        batch_losses, batch_sizes = zip(*[(loss_fn(model_fn(X), y), len(X)) for X, y in validation_data_loader])
+        validation_loss = np.sum(np.multiply(batch_losses, batch_sizes)) / np.sum(batch_sizes)
+    return validation_loss
 
 
 def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, rank, initial_epoch, number_epochs):
     
     for epoch in range(initial_epoch, number_epochs):
+        
+        # train for a single epoch
         model_fn.train()
         for X_batch, y_batch in training_data_loader:
             _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch)
             lr_scheduler.step()
-        _validate(model_fn, loss_fn, validation_data_loader)
         
+        # compute validation loss after every epoch
+        model_fn.eval()
+        validation_loss = _compute_validation_loss(model_fn, loss_fn, validation_data_loader)
+        print(f"Training epoch: {epoch}, Validation loss: {validation_loss}")
+
         # only checkpoint on rank 0 worker to avoid corruption of checkpoint data
         if rank == 0:
             _checkpoint = {"model_state_dict": model_fn.state_dict(),
                            "optimizer_state_dict": optimizer.state_dict()}
-            torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pth")
+            torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pt")
 
 
 # create training and validation data sets
@@ -214,10 +221,14 @@ one_cycle_lr = (torch.optim
 _initial_epoch = 0
 if hvd.rank() == 0:
     
+    # Create the checkpoints logging directory (if necessary)
+    if not os.path.isdir(checkpoints_logging_dir):
+        os.mkdir(checkpoints_logging_dir)
+    
     # Look for a pre-existing checkpoint from which to resume training
     existing_checkpoints_dir = pathlib.Path(args.read_checkpoints_from)
     for _most_recent_epoch in range(args.epochs, 0, -1):
-        _checkpoint_filepath = f"{existing_checkpoints_dir}/checkpoint-epoch-{_most_recent_epoch:02d}.pth"
+        _checkpoint_filepath = f"{existing_checkpoints_dir}/checkpoint-epoch-{_most_recent_epoch:02d}.pt"
         if os.path.exists(_checkpoint_filepath):
             _checkpoint = torch.load(_checkpoint_filepath)
             model_fn.load_state_dict(_checkpoint["model_state_dict"])
