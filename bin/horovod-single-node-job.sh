@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #SBATCH --nodes=1
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mem=0
 #SBATCH --ntasks=8
 #SBATCH --tasks-per-node=8
@@ -28,7 +28,7 @@ mkdir -p $LOCAL_CHECKPOINTS_DIR
 mkdir -p $LOCAL_TENSORBOARD_DIR
 
 # Load software stack
-module load cuda/10.0.130
+module load cuda/10.1.243
 conda activate ../env
 
 # Start the nvidia-smi process in the background
@@ -41,7 +41,6 @@ NVDASHBOARD_PORT=8889
 python -m jupyterlab_nvdashboard.server $NVDASHBOARD_PORT &
 NVDASHBOARD_PID=$!
 
-https://github.com/kaust-vislab/tensorflow-gpu-data-science-project
 # start the training process in the background
 horovodrun -np $SLURM_NTASKS python $TRAINING_SCRIPT \
     --data-dir $DATA_DIR \
@@ -62,8 +61,8 @@ while [ "${HOROVODRUN_STATE}" != "" ]
 done
 
 # kill off the GPU monitoring processes
-kill $NVIDIA_SMI_PID
-kill $NVDASHBOARD_PID
+kill $NVIDIA_SMI_PID $NVDASHBOARD_PID
+
 # make sure to get any new files written since last rsync 
 rsync -a $LOCAL_CHECKPOINTS_DIR/ $PERSISTENT_CHECKPOINTS_DIR
 rsync -a $LOCAL_TENSORBOARD_DIR/ $PERSISTENT_TENSORBOARD_DIR

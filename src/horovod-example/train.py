@@ -21,6 +21,9 @@ parser.add_argument("--read-checkpoints-from",
 parser.add_argument("--write-checkpoints-to",
                     type=str,
                     help="Path to the directory where checkpoints should be written")
+parser.add_argument("--tensorboard-logging-dir",
+                    type=str,
+                    help="Path to the directory where tensorboard logs should be written")
 parser.add_argument('--batches-per-allreduce',
                     type=int,
                     default=1,
