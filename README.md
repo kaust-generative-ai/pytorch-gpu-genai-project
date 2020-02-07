@@ -57,34 +57,41 @@ After adding any necessary dependencies that should be downloaded via `conda` to
 directory by running the following commands.
 
 ```bash
-$ export ENV_PREFIX=$PWD/env
-$ export HOROVOD_CUDA_HOME=$CUDA_HOME
-$ export HOROVOD_NCCL_HOME=$ENV_PREFIX
-$ export HOROVOD_GPU_ALLREDUCE=NCCL
-$ export HOROVOD_GPU_BROADCAST=NCCL
-$ conda env create --prefix $ENV_PREFIX --file environment.yml --force
+export ENV_PREFIX=$PWD/env
+export HOROVOD_CUDA_HOME=$CUDA_HOME
+export HOROVOD_NCCL_HOME=$ENV_PREFIX
+export HOROVOD_GPU_ALLREDUCE=NCCL
+export HOROVOD_GPU_BROADCAST=NCCL
+conda env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
 Once the new environment has been created you can activate the environment with the following 
 command.
 
 ```bash
-$ conda activate $ENV_PREFIX
-(/path/to/env) $
+conda activate $ENV_PREFIX
 ```
 
 Note that the `ENV_PREFIX` directory is *not* under version control as it can always be re-created as 
 necessary.
-
-### Building JupyterLab extensions (optional)
 
 If you wish to use any JupyterLab extensions included in the `environment.yml` and `requirements.txt` 
 files then you need to activate the environment and rebuild the JupyterLab application using the 
 following commands to source the `postBuild` script.
 
 ```bash
-$ conda activate $ENV_PREFIX # optional if environment already active
-(/path/to/env) $ . postBuild
+conda activate $ENV_PREFIX # optional if environment already active
+. postBuild
+```
+
+For your convenience these commands have been combined in a shell script `./bin/create-conda-env.sh`. 
+Running the shell script will set the Horovod build variables correctly, create the Conda environment, 
+activate the Conda environment, and built JupyterLab with any additional extensions. The script should 
+be run from the project root directory as follows. 
+follows.
+
+```bash
+./bin/create-conda-env.sh # assumes that $CUDA_HOME is set properly
 ```
 
 ### Verifying the Conda environment
@@ -93,8 +100,8 @@ After building the Conda environment you can check that Horovod has been built w
 TensorFlow and MPI with the following command.
 
 ```bash
-$ conda activate $ENV_PREFIX # optional if environment already active
-(/path/to/env) $ horovodrun --check-build
+conda activate $ENV_PREFIX # optional if environment already active
+horovodrun --check-build
 ```
 
 You should see output similar to the following.
