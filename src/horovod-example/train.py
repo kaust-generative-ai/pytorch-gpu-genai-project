@@ -28,6 +28,10 @@ parser.add_argument('--batches-per-allreduce',
                     type=int,
                     default=1,
                     help="number of batches processed locally before executing allreduce across workers")
+parser.add_argument('--fp16-allreduce',
+                    action='store_true',
+                    default=False,
+                    help='use fp16 compression during allreduce')
 
 # Most default settings from https://arxiv.org/abs/1706.02677.
 parser.add_argument("--batch-size",
@@ -197,8 +201,15 @@ _optimizer = optim.SGD(model_fn.parameters(),
                        lr=_initial_lr,
                        momentum=args.momentum,
                        weight_decay=args.weight_decay)
+
+
+# compression algorithm used when performing allreduce
+_compression = hvd.Compression.fp16 if args.fp16_allreduce else hvd.Compression.none
+
+# wrap the local optimizer up in a distributed optimzer
 distributed_optimizer = hvd.DistributedOptimizer(_optimizer,
                                                  named_parameters=model_fn.named_parameters(),
+                                                 compression=_compression,
                                                  backward_passes_per_step=args.batches_per_allreduce)
 
 # define learning rate scheduler

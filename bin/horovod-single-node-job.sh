@@ -46,7 +46,8 @@ horovodrun -np $SLURM_NTASKS python $TRAINING_SCRIPT \
     --data-dir $DATA_DIR \
     --read-checkpoints-from $PERSISTENT_CHECKPOINTS_DIR \
     --write-checkpoints-to  $LOCAL_CHECKPOINTS_DIR \
-    --tensorboard-logging-dir $LOCAL_TENSORBOARD_DIR &
+    --tensorboard-logging-dir $LOCAL_TENSORBOARD_DIR \
+    --fp16-allreduce &
 HOROVODRUN_PID=$!
 
 # asynchronous rsync of training logs between local and persistent storage
