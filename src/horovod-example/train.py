@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils import data
+from torch.utils import data, tensorboard
 from torchvision import datasets, transforms, models
 
 
@@ -83,7 +83,7 @@ data_dir = pathlib.Path(args.data_dir)
 training_dir = data_dir / "train"
 validation_dir = data_dir / "val"
 checkpoints_logging_dir = pathlib.Path(args.write_checkpoints_to)
-
+tensorboard_logging_dir = pathlib.Path(args.tensorboard_logging_dir)
         
 # define constants used in data preprocessing
 resized_img_width, resized_img_height = 256, 256
@@ -93,9 +93,37 @@ n_validation_images = 50000
 n_testing_images = 100000
 
 
-def _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch):
+class Metric(object):
+    
+    def __init__(self, name):
+        self.name = name
+        self.sum = torch.tensor(0.)
+        self.n = torch.tensor(0.)
+
+    def update(self, val):
+        self.sum += hvd.allreduce(val.detach().cpu(), name=self.name)
+        self.n += 1
+
+    @property
+    def avg(self):
+        return self.sum / self.n
+
+    
+def _compute_accuracy(output, target):
+    pred = output.max(1, keepdim=True)[1]
+    accuracy = (pred.eq(target.view_as(pred))
+                    .cpu()
+                    .float()
+                    .mean())
+    return accuracy
+    
+
+def _partial_fit(model_fn, loss_fn, optimizer, loss_metric, accuracy_metric, X_batch, y_batch):
+    
     # forward pass
     loss = loss_fn(model_fn(X_batch), y_batch)
+    loss_metric.update(loss)
+    accuracy_metric.update(_compute_accuracy(model_fn(X_batch), y_batch))
 
     # back propagation
     loss.backward()
@@ -103,11 +131,20 @@ def _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch):
     optimizer.zero_grad() # don't forget to reset the gradient after each batch!
 
 
-def _compute_validation_loss(model_fn, loss_fn, validation_data_loader):
+def _validate(model_fn, loss_fn, validation_data_loader, epoch, rank):
+    
+    val_loss = Metric('val_loss')
+    val_accuracy = Metric('val_accuracy')
+
     with torch.no_grad():
-        batch_losses, batch_sizes = zip(*[(loss_fn(model_fn(X), y), len(X)) for X, y in validation_data_loader])
-        validation_loss = np.sum(np.multiply(batch_losses, batch_sizes)) / np.sum(batch_sizes)
-    return validation_loss
+        for X, y in validation_data_loader:
+            val_loss.update(loss_fn(model_fn(X), y))
+            val_accuracy.update(_compute_accuracy(model_fn(X), y))
+        print(f"Training epoch: {epoch}, Validation loss: {val_loss.avg.item()}, Validation accuracy: {val_accuracy.avg.item()}")
+    
+    if rank == 0:
+        summary_writer.add_scalar('val/loss', val_loss.avg, epoch)
+        summary_writer.add_scalar('val/accuracy', val_accuracy.avg, epoch)
 
 
 def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, rank, initial_epoch, number_epochs):
@@ -116,14 +153,17 @@ def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, valida
         
         # train for a single epoch
         model_fn.train()
+        train_sampler.set_epoch(epoch)
+        train_loss = Metric('train_loss')
+        train_accuracy = Metric('train_accuracy')
+        
         for X_batch, y_batch in training_data_loader:
-            _partial_fit(model_fn, loss_fn, optimizer, X_batch, y_batch)
+            _partial_fit(model_fn, loss_fn, optimizer, train_loss, train_accuracy, X_batch, y_batch)
             lr_scheduler.step()
         
         # compute validation loss after every epoch
         model_fn.eval()
-        validation_loss = _compute_validation_loss(model_fn, loss_fn, validation_data_loader)
-        print(f"Training epoch: {epoch}, Validation loss: {validation_loss}")
+        _validate(model_fn, loss_fn, validation_data_loader, epoch, rank)
 
         # only checkpoint on rank 0 worker to avoid corruption of checkpoint data
         if rank == 0:
@@ -131,6 +171,8 @@ def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, valida
                            "optimizer_state_dict": optimizer.state_dict()}
             torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pt")
 
+            summary_writer.add_scalar('train/loss', train_loss.avg, epoch)
+            summary_writer.add_scalar('train/accuracy', train_accuracy.avg, epoch)
 
 # create training and validation data sets
 _train_transform = transforms.Compose([
@@ -224,9 +266,11 @@ one_cycle_lr = (torch.optim
 _initial_epoch = 0
 if hvd.rank() == 0:
     
-    # Create the checkpoints logging directory (if necessary)
+    # Create the checkpoints and tensorboard logging directories (if necessary)
     if not os.path.isdir(checkpoints_logging_dir):
         os.mkdir(checkpoints_logging_dir)
+    if not os.path.isdir(tensorboard_logging_dir):
+        os.mkdir(tensorboard_logging_dir)
     
     # Look for a pre-existing checkpoint from which to resume training
     existing_checkpoints_dir = pathlib.Path(args.read_checkpoints_from)
@@ -238,6 +282,8 @@ if hvd.rank() == 0:
             distributed_optimizer.load_state_dict(_checkpoint["optimizer_state_dict"])
             _initial_epoch = _most_recent_epoch
             break
+            
+    summary_writer = tensorboard.SummaryWriter(tensorboard_logging_dir)
     
 # broadcast initial epoch from rank 0 (which will have checkpoints) to other ranks.
 initial_epoch = (hvd.broadcast(torch.tensor(_initial_epoch), root_rank=0)

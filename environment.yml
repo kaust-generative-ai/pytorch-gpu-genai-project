@@ -20,5 +20,6 @@ dependencies:
     - -r file:requirements.txt
   - python=3.6
   - pytorch=1.4
+  - tensorboard=2.0
   - torchvision=0.5
   
