@@ -37,7 +37,7 @@ nvidia-smi dmon --delay $NVIDIA_SMI_DELAY_SECONDS --options DT >> $PERSISTENT_LO
 NVIDIA_SMI_PID=$!
 
 # Start the nvdashboard server running in the background
-NVDASHBOARD_PORT=8889
+NVDASHBOARD_PORT=8000
 python -m jupyterlab_nvdashboard.server $NVDASHBOARD_PORT &
 NVDASHBOARD_PID=$!
 
