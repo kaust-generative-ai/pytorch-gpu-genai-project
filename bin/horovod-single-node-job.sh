@@ -41,12 +41,18 @@ NVDASHBOARD_PORT=8889
 python -m jupyterlab_nvdashboard.server $NVDASHBOARD_PORT &
 NVDASHBOARD_PID=$!
 
+# Start the TensorBoard server running in the background
+TENSORBOARD_PORT=6006
+tensorboard --logdir $LOCAL_TENSORBOARD_DIR --port $TENSORBOARD_PORT --bind_all &
+TENSORBOARD_PID=$!
+
 # start the training process in the background
 horovodrun -np $SLURM_NTASKS python $TRAINING_SCRIPT \
     --data-dir $DATA_DIR \
     --read-checkpoints-from $PERSISTENT_CHECKPOINTS_DIR \
     --write-checkpoints-to  $LOCAL_CHECKPOINTS_DIR \
-    --tensorboard-logging-dir $LOCAL_TENSORBOARD_DIR &
+    --tensorboard-logging-dir $LOCAL_TENSORBOARD_DIR \
+    --batch-size 128 &
 HOROVODRUN_PID=$!
 
 # asynchronous rsync of training logs between local and persistent storage
@@ -60,8 +66,8 @@ while [ "${HOROVODRUN_STATE}" != "" ]
         HOROVODRUN_STATE=$(ps -h --pid $HOROVODRUN_PID -o state | head -n 1)
 done
 
-# kill off the GPU monitoring processes
-kill $NVIDIA_SMI_PID $NVDASHBOARD_PID
+# kill off the monitoring processes
+kill $NVIDIA_SMI_PID $NVDASHBOARD_PID $TENSORBOARD_PID
 
 # make sure to get any new files written since last rsync 
 rsync -a $LOCAL_CHECKPOINTS_DIR/ $PERSISTENT_CHECKPOINTS_DIR
