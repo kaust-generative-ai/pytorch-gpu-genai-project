@@ -23,6 +23,14 @@ Project organization is based on ideas from [_Good Enough Practices for Scientif
 
 ## Installing NVIDIA CUDA Toolkit
 
+Installing the NVIDIA CUDA Toolkit manually is only required if your project needs to use the `nvcc` compiler. 
+Note that even if you have not written any custom CUDA code that needs to be compiled with `nvcc`, if your project 
+uses packages such as [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/) that include custom 
+CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
+
+If you don't need `nvcc`, then you can skip this section as `conda` will install a `cudatoolkit` package 
+which includes all the necessary runtime CUDA dependencies (but not the `nvcc` compiler).
+
 ### Workstation
 
 You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
@@ -58,10 +66,6 @@ directory by running the following commands.
 
 ```bash
 export ENV_PREFIX=$PWD/env
-export HOROVOD_CUDA_HOME=$CUDA_HOME
-export HOROVOD_NCCL_HOME=$ENV_PREFIX
-export HOROVOD_GPU_ALLREDUCE=NCCL
-export HOROVOD_GPU_BROADCAST=NCCL
 conda env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
@@ -91,39 +95,7 @@ be run from the project root directory as follows.
 follows.
 
 ```bash
-./bin/create-conda-env.sh # assumes that $CUDA_HOME is set properly
-```
-
-### Verifying the Conda environment
-
-After building the Conda environment you can check that Horovod has been built with support for 
-TensorFlow and MPI with the following command.
-
-```bash
-conda activate $ENV_PREFIX # optional if environment already active
-horovodrun --check-build
-```
-
-You should see output similar to the following.
-
-```
-Horovod v0.19.0:
-
-Available Frameworks:
-    [ ] TensorFlow
-    [X] PyTorch
-    [ ] MXNet
-
-Available Controllers:
-    [X] MPI
-    [X] Gloo
-
-Available Tensor Operations:
-    [X] NCCL
-    [ ] DDL
-    [ ] CCL
-    [X] MPI
-    [X] Gloo  
+./bin/create-conda-env.sh
 ```
 
 ### Listing the full contents of the Conda environment
