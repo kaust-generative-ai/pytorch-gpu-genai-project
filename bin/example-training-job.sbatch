@@ -1,12 +1,11 @@
 #!/bin/bash --login
 #SBATCH --nodes=1
 #SBATCH --time=12:00:00
-#SBATCH --mem=0
-#SBATCH --ntasks=8
-#SBATCH --tasks-per-node=8
-#SBATCH --cpus-per-task=6
-#SBATCH --gres=gpu:v100:8
-#SBATCH --constraint=cpu_intel_platinum_8260
+#SBATCH --ntasks=1
+#SBATCH --gpus-per-task=1
+#SBATCH --mem-per-gpu=64G
+#SBATCH --cpus-per-gpu=6
+#SBATCH --constraint=v100
 #SBATCH --partition=batch
 #SBATCH --output=../results/%x/slurm-%j.out
 #SBATCH --error=../results/%x/slurm-%j.err
