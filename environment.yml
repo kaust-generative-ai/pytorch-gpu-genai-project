@@ -25,4 +25,5 @@ dependencies:
   - python=3.7
   - pytorch=1.5
   - tensorboard=2.1
+  - torchtext=0.6
   - torchvision=0.6
