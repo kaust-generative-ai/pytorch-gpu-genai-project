@@ -10,7 +10,7 @@ from torch.utils import data, tensorboard
 from torchvision import datasets, transforms, models
 
 
-parser = argparse.ArgumentParser(description="PyTorch + Horovod distributed training benchmark")
+parser = argparse.ArgumentParser(description="PyTorch training benchmark")
 parser.add_argument("--data-dir",
                     type=str,
                     help="Path to ILSVR data")
@@ -23,10 +23,6 @@ parser.add_argument("--write-checkpoints-to",
 parser.add_argument("--tensorboard-logging-dir",
                     type=str,
                     help="Path to the directory where tensorboard logs should be written")
-parser.add_argument('--batches-per-allreduce',
-                    type=int,
-                    default=1,
-                    help="number of batches processed locally before executing allreduce across workers")
 
 # Most default settings from https://arxiv.org/abs/1706.02677.
 parser.add_argument("--batch-size",
@@ -139,9 +135,8 @@ def _validate(model_fn, loss_fn, validation_data_loader, epoch):
             val_accuracy.update(_compute_accuracy(model_fn(X), y))
         print(f"Training epoch: {epoch}, Validation loss: {val_loss.avg.item()}, Validation accuracy: {val_accuracy.avg.item()}")
     
-    if rank == 0:
-        summary_writer.add_scalar('val/loss', val_loss.avg, epoch)
-        summary_writer.add_scalar('val/accuracy', val_accuracy.avg, epoch)
+    summary_writer.add_scalar('val/loss', val_loss.avg, epoch)
+    summary_writer.add_scalar('val/accuracy', val_accuracy.avg, epoch)
 
 
 def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, initial_epoch, number_epochs):
