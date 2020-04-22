@@ -2,7 +2,6 @@ import argparse
 import os
 import pathlib
 
-import horovod.torch as hvd
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -11,7 +10,7 @@ from torch.utils import data, tensorboard
 from torchvision import datasets, transforms, models
 
 
-parser = argparse.ArgumentParser(description="PyTorch + Horovod distributed training benchmark")
+parser = argparse.ArgumentParser(description="PyTorch training benchmark")
 parser.add_argument("--data-dir",
                     type=str,
                     help="Path to ILSVR data")
@@ -24,10 +23,6 @@ parser.add_argument("--write-checkpoints-to",
 parser.add_argument("--tensorboard-logging-dir",
                     type=str,
                     help="Path to the directory where tensorboard logs should be written")
-parser.add_argument('--batches-per-allreduce',
-                    type=int,
-                    default=1,
-                    help="number of batches processed locally before executing allreduce across workers")
 
 # Most default settings from https://arxiv.org/abs/1706.02677.
 parser.add_argument("--batch-size",
@@ -72,10 +67,8 @@ parser.add_argument("--seed",
                     help="random seed")
 args = parser.parse_args()
 
-# initialize horovod
-hvd.init()
+# initialize seeds
 torch.manual_seed(args.seed)
-torch.cuda.set_device(hvd.local_rank()) # Horovod: pin GPU to local rank.
 torch.cuda.manual_seed(args.seed)
 
 # create required directories
@@ -101,7 +94,7 @@ class Metric(object):
         self.n = torch.tensor(0.)
 
     def update(self, val):
-        self.sum += hvd.allreduce(val.detach().cpu(), name=self.name)
+        self.sum += val.detach().cpu()
         self.n += 1
 
     @property
@@ -131,7 +124,7 @@ def _partial_fit(model_fn, loss_fn, optimizer, loss_metric, accuracy_metric, X_b
     optimizer.zero_grad() # don't forget to reset the gradient after each batch!
 
 
-def _validate(model_fn, loss_fn, validation_data_loader, epoch, rank):
+def _validate(model_fn, loss_fn, validation_data_loader, epoch):
     
     val_loss = Metric('val_loss')
     val_accuracy = Metric('val_accuracy')
@@ -142,12 +135,11 @@ def _validate(model_fn, loss_fn, validation_data_loader, epoch, rank):
             val_accuracy.update(_compute_accuracy(model_fn(X), y))
         print(f"Training epoch: {epoch}, Validation loss: {val_loss.avg.item()}, Validation accuracy: {val_accuracy.avg.item()}")
     
-    if rank == 0:
-        summary_writer.add_scalar('val/loss', val_loss.avg, epoch)
-        summary_writer.add_scalar('val/accuracy', val_accuracy.avg, epoch)
+    summary_writer.add_scalar('val/loss', val_loss.avg, epoch)
+    summary_writer.add_scalar('val/accuracy', val_accuracy.avg, epoch)
 
 
-def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, rank, initial_epoch, number_epochs):
+def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, validation_data_loader, initial_epoch, number_epochs):
     
     for epoch in range(initial_epoch, number_epochs):
         
@@ -163,16 +155,15 @@ def fit(model_fn, loss_fn, optimizer, lr_scheduler, training_data_loader, valida
         
         # compute validation loss after every epoch
         model_fn.eval()
-        _validate(model_fn, loss_fn, validation_data_loader, epoch, rank)
+        _validate(model_fn, loss_fn, validation_data_loader, epoch)
 
-        # only checkpoint on rank 0 worker to avoid corruption of checkpoint data
-        if rank == 0:
-            _checkpoint = {"model_state_dict": model_fn.state_dict(),
-                           "optimizer_state_dict": optimizer.state_dict()}
-            torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pt")
+        # checkpoint data
+        _checkpoint = {"model_state_dict": model_fn.state_dict(),
+                       "optimizer_state_dict": optimizer.state_dict()}
+        torch.save(_checkpoint, f"{checkpoints_logging_dir}/checkpoint-epoch-{epoch:02d}.pt")
 
-            summary_writer.add_scalar('train/loss', train_loss.avg, epoch)
-            summary_writer.add_scalar('train/accuracy', train_accuracy.avg, epoch)
+        summary_writer.add_scalar('train/loss', train_loss.avg, epoch)
+        summary_writer.add_scalar('train/accuracy', train_accuracy.avg, epoch)
 
 # create training and validation data sets
 _train_transform = transforms.Compose([
@@ -191,12 +182,6 @@ _val_transform = transforms.Compose([
 ])
 val_dataset = datasets.ImageFolder(data_dir / "val", transform=_val_transform)
 
-# use DistributedSampler to partition data among workers
-train_sampler = (data.distributed
-                     .DistributedSampler(train_dataset, num_replicas=hvd.size(), rank=hvd.rank()))
-val_sampler = (data.distributed
-                   .DistributedSampler(val_dataset, num_replicas=hvd.size(), rank=hvd.rank()))
-
 # create training and validation data loaders
 class WrappedDataLoader:
     
@@ -213,13 +198,11 @@ class WrappedDataLoader:
 
 _data_loader_kwargs = {'num_workers': 6, "pin_memory": True}
 _train_data_loader = (data.DataLoader(train_dataset,
-                                      batch_size = args.batch_size * args.batches_per_allreduce,
-                                      sampler=train_sampler,
+                                      batch_size = args.batch_size,
                                       **_data_loader_kwargs))
 
 _val_data_loader = torch.utils.data.DataLoader(val_dataset,
                                                batch_size=args.val_batch_size,
-                                               sampler=val_sampler,
                                                **_data_loader_kwargs)
 
 _data_to_gpu = lambda X, y: (X.cuda(), y.cuda())
@@ -232,16 +215,13 @@ model_fn = (models.resnet50()
 loss_fn = F.cross_entropy
             
 # adjust initial learning rate based on number of "effective GPUs".
-_global_batch_size = args.batch_size * args.batches_per_allreduce * hvd.size()
+_global_batch_size = args.batch_size * args.batches_per_allreduce
 _n_effective_gpus = _global_batch_size // args.base_batch_size 
 _initial_lr = args.base_lr * _n_effective_gpus 
-_optimizer = optim.SGD(model_fn.parameters(),
-                       lr=_initial_lr,
-                       momentum=args.momentum,
-                       weight_decay=args.weight_decay)
-distributed_optimizer = hvd.DistributedOptimizer(_optimizer,
-                                                 named_parameters=model_fn.named_parameters(),
-                                                 backward_passes_per_step=args.batches_per_allreduce)
+optimizer = optim.SGD(model_fn.parameters(),
+                      lr=_initial_lr,
+                      momentum=args.momentum,
+                      weight_decay=args.weight_decay)
 
 # define learning rate scheduler
 _lr_scheduler_kwargs = {
@@ -256,45 +236,36 @@ _lr_scheduler_kwargs = {
 }
 one_cycle_lr = (torch.optim
                      .lr_scheduler
-                     .OneCycleLR(distributed_optimizer,
+                     .OneCycleLR(optimizer,
                                  max_lr=args.max_lr,
                                  epochs=args.epochs,
-                                 steps_per_epoch=n_training_images // (args.batch_size * hvd.size()),
+                                 steps_per_epoch=n_training_images // args.batch_size,
                                  **_lr_scheduler_kwargs))
 
-# only rank 0 worker should restore from checkpoint
+# restore from checkpoint
 _initial_epoch = 0
-if hvd.rank() == 0:
     
-    # Create the checkpoints and tensorboard logging directories (if necessary)
-    if not os.path.isdir(checkpoints_logging_dir):
-        os.mkdir(checkpoints_logging_dir)
-    if not os.path.isdir(tensorboard_logging_dir):
-        os.mkdir(tensorboard_logging_dir)
+# Create the checkpoints and tensorboard logging directories (if necessary)
+if not os.path.isdir(checkpoints_logging_dir):
+    os.mkdir(checkpoints_logging_dir)
+if not os.path.isdir(tensorboard_logging_dir):
+    os.mkdir(tensorboard_logging_dir)
     
-    # Look for a pre-existing checkpoint from which to resume training
-    existing_checkpoints_dir = pathlib.Path(args.read_checkpoints_from)
-    for _most_recent_epoch in range(args.epochs, 0, -1):
-        _checkpoint_filepath = f"{existing_checkpoints_dir}/checkpoint-epoch-{_most_recent_epoch:02d}.pt"
-        if os.path.exists(_checkpoint_filepath):
-            _checkpoint = torch.load(_checkpoint_filepath)
-            model_fn.load_state_dict(_checkpoint["model_state_dict"])
-            distributed_optimizer.load_state_dict(_checkpoint["optimizer_state_dict"])
-            _initial_epoch = _most_recent_epoch
-            break
+# Look for a pre-existing checkpoint from which to resume training
+existing_checkpoints_dir = pathlib.Path(args.read_checkpoints_from)
+for _most_recent_epoch in range(args.epochs, 0, -1):
+    _checkpoint_filepath = f"{existing_checkpoints_dir}/checkpoint-epoch-{_most_recent_epoch:02d}.pt"
+    if os.path.exists(_checkpoint_filepath):
+        _checkpoint = torch.load(_checkpoint_filepath)
+        model_fn.load_state_dict(_checkpoint["model_state_dict"])
+        optimizer.load_state_dict(_checkpoint["optimizer_state_dict"])
+        _initial_epoch = _most_recent_epoch
+        break
             
-    summary_writer = tensorboard.SummaryWriter(tensorboard_logging_dir)
+summary_writer = tensorboard.SummaryWriter(tensorboard_logging_dir)
     
-# broadcast initial epoch from rank 0 (which will have checkpoints) to other ranks.
-initial_epoch = (hvd.broadcast(torch.tensor(_initial_epoch), root_rank=0)
-                    .item())
-
-# broadcast parameters & optimizer state from rank 0 to all other ranks
-hvd.broadcast_parameters(model_fn.state_dict(), root_rank=0)
-hvd.broadcast_optimizer_state(distributed_optimizer, root_rank=0)
-
 # run the training loop
-fit(model_fn, loss_fn, distributed_optimizer, one_cycle_lr, train_data_loader, val_data_loader, hvd.rank(), initial_epoch, args.epochs)
+fit(model_fn, loss_fn, distributed_optimizer, one_cycle_lr, train_data_loader, val_data_loader, initial_epoch, args.epochs)
 
 
 

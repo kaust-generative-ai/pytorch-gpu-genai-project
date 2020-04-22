@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-devel-ubuntu16.04
+FROM ubuntu:16.04
 
 LABEL maintainer="pughdr <david.pugh@kaust.edu.sa>"
 
@@ -35,7 +35,7 @@ RUN chown $UID:$GID /usr/local/bin/postBuild /usr/local/bin/entrypoint.sh && \
 USER $USER
 
 # install miniconda
-ENV MINICONDA_VERSION 4.7.12
+ENV MINICONDA_VERSION 4.8.2
 ENV CONDA_DIR $HOME/miniconda3
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-$MINICONDA_VERSION-Linux-x86_64.sh -O ~/miniconda.sh && \
     chmod +x ~/miniconda.sh && \
@@ -58,10 +58,6 @@ WORKDIR $PROJECT_DIR
 
 # build the conda environment
 ENV ENV_PREFIX $PROJECT_DIR/env
-ENV HOROVOD_CUDA_HOME $CUDA_HOME
-ENV HOROVOD_NCCL_HOME $ENV_PREFIX
-ENV HOROVOD_GPU_ALLREDUCE NCCL
-ENV HOROVOD_GPU_BROADCAST NCCL
 RUN conda update --name base --channel defaults conda && \
     conda env create --prefix $ENV_PREFIX --file /tmp/environment.yml --force && \
     conda activate $ENV_PREFIX && \
