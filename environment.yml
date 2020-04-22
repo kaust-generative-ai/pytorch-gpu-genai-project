@@ -6,7 +6,7 @@ channels:
   - defaults
 
 dependencies:
-  - bokeh=1.4
+  - bokeh=2.0
   - cudatoolkit=10.1
   - cupti=10.1
   - hvplot=0.5
