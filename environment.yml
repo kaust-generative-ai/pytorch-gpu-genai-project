@@ -6,24 +6,17 @@ channels:
   - defaults
 
 dependencies:
-  - bokeh=2.0
-  - cudatoolkit=10.1
-  - cupti=10.1
-  - hvplot=0.5
-  - ipython-sql=0.3
-  - jupyterlab=1.2
-  - jupyterlab-git=0.9
-  - matplotlib=3.2
+  - cudatoolkit=10.2
+  - jupyterlab=2.2
+  - jupyterlab-git=0.20
   - mpi4py=3.0 # installs cuda-aware openmpi
-  - nbdime=1.1
-  - nccl=2.5
-  - nodejs=13
-  - pandas=1.0
-  - pip=20.0
+  - nodejs=14
+  - pip=20.1
   - pip:
     - -r file:requirements.txt
   - python=3.7
-  - pytorch=1.5
-  - tensorboard=2.1
-  - torchtext=0.6
-  - torchvision=0.6
+  - pytorch=1.6
+  - tensorboard=2.3
+  - torchaudio=0.6
+  - torchtext=0.7
+  - torchvision=0.7
