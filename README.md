@@ -35,14 +35,14 @@ which includes all the necessary runtime CUDA dependencies (but not the `nvcc` c
 
 You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
 of the NVIDIA CUDA Toolkit installed on your workstation. For PyTorch you should install 
-[NVIDIA CUDA Toolkit 10.1](https://developer.nvidia.com/cuda-10.1-download-archive-update2) 
-[(documentation)](https://docs.nvidia.com/cuda/archive/10.1/).
+[NVIDIA CUDA Toolkit 10.2](https://developer.nvidia.com/cuda-10.2-download-archive) 
+[(documentation)](https://docs.nvidia.com/cuda/archive/10.2/).
 
 After installing the appropriate version of the NVIDIA CUDA Toolkit you will need to set the 
 following environment variables.
 
 ```bash
-$ export CUDA_HOME=/usr/local/cuda-10.1
+$ export CUDA_HOME=/usr/local/cuda-10.2
 $ export PATH=$CUDA_HOME/bin:$PATH
 $ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
@@ -54,7 +54,7 @@ made available on Ibex by the Ibex Systems team. Users simply need to load the a
 using the `module` tool. 
 
 ```bash
-$ module load cuda/10.1.243
+$ module load cuda/10.2.89
 ```
 
 ## Building the Conda environment
@@ -85,14 +85,13 @@ following commands to source the `postBuild` script.
 
 ```bash
 conda activate $ENV_PREFIX # optional if environment already active
-. postBuild
+source postBuild
 ```
 
 For your convenience these commands have been combined in a shell script `./bin/create-conda-env.sh`. 
-Running the shell script will set the Horovod build variables correctly, create the Conda environment, 
-activate the Conda environment, and built JupyterLab with any additional extensions. The script should 
-be run from the project root directory as follows. 
-follows.
+Running the shell script will create the Conda environment, activate the Conda environment, and build 
+JupyterLab with any additional extensions. The script should be run from the project root directory 
+as follows. 
 
 ```bash
 ./bin/create-conda-env.sh
@@ -116,6 +115,10 @@ following command.
 ```bash
 $ conda env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
+
+If you need to add (remove) any JupyterLab extensions, then it is best to re-run the environment 
+creation script `./bin/create-conda-env.sh` to make certain that JupyterLab extensions are properly 
+built.
 
 ## Using Docker
 
