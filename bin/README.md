@@ -1,4 +1,48 @@
-## Slurm
+# Slurm
+
+## Interactive jobs
+
+### Launching Jupyter server for interactive work
+
+The job script `launch-jupyter-server.sbatch` launches a [Jupyter](https://jupyter.org/) server for 
+interactive prototyping. To launch a [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) 
+server use `sbatch` to submit the job script by running the following command from the project root 
+directory.
+
+```bash
+sbatch --user-mail $KAUST_EMAIL ./bin/launch-jupyter-server.sbatch
+```
+
+If you prefer the classic Jupyter Notebook interface, then you can launch the Jupyter notebook 
+server with the following command in the project root directory.
+
+```bash
+sbatch --user-mail $KAUST_EMAIL	./bin/launch-jupyter-server.sbatch notebook
+```
+
+Once the job has started, you can inspect the `launch-jupyter-server-$SLURM_JOB_ID-slurm.err` 
+file where you will find instructions on how to access the server running in your local 
+browser.
+
+#### SSH tunneling between your local machine and Ibex compute node(s)
+
+To connect to the compute node on Ibex running your Jupyter server, you need to create 
+an ssh tunnel from your local machine to glogin node on Ibex using the following command.
+
+```bash
+ssh -L ${JUPYTERLAB_PORT}:${IBEX_NODE}:${JUPYTERLAB_PORT} ${KAUST_USER}@glogin.ibex.kaust.edu.sa
+```
+
+The exact command for your job can be copied from the 
+`launch-jupyter-server-$SLURM_JOB_ID-slurm.err` file.
+
+#### Accessing Jupyter server from your local machine
+
+Once you have set up your SSH tunnel, in order to access the Jupyter server from your local 
+machine you need to copy the second url provided in the Jupyter server logs in the 
+`launch-jupyter-server-$SLURM_JOB_ID-slurm.err` file and paste it into the browser on your local machine.
+
+## Batch jobs
 
 ### Single node jobs
 
@@ -100,14 +144,14 @@ rsync -a $LOCAL_TENSORBOARD_DIR/ $PERSISTENT_TENSORBOARD_DIR
 #### Loading the software application stack
 
 It is always good practice to explicitly load the software application stack inside the job script.
-First we load the appropriate Cuda Toolkit module for the version of PyTorch we are using. Then we 
+First we load the appropriate Cuda Toolkit module for the version of TensorFlow we are using. Then we 
 activate the Conda environment containing all the other software dependencies in such as NCCL, CUDNN, 
 OpenMPI, and Horovod.
 
 ```bash
 ...
 # Load software stack
-module load cuda/10.1.243
+module load cuda/10.0.130
 conda activate ../env
 ...
 ```
@@ -121,30 +165,15 @@ background process prior to starting the training job (this way we don't block t
 making progress) and to have `nvidia-smi dmon` append its logs to a file on persistent storage (so 
 that the GPU resource utilization logs can be inspected whilst the training job is still running).
 
-We also use a new tool called `jupyterlab-nvdashboard` developed by the NVIDIA RAPIDS team to provide 
-a browser-based UI for GPU, CPU, memory, and IO resource monitoring. The server is started as a 
-background process prior to launching your training job and is accessible from a web browser at the 
-following URL
-```
-$IBEX_NODE_NAME.ibex.kaust.edu.sa:$NVDASHBOARD_PORT
-``` 
-where `$IBEX_NODE_NAME` is the name of the node on Ibex where your job is running.
-
 ```bash
 ...
 # start the nvidia-smi process in the background
 NVIDIA_SMI_DELAY_SECONDS=60
 nvidia-smi dmon --delay $NVIDIA_SMI_DELAY_SECONDS --options DT >> $PERSISTENT_LOGGING_DIR/nvidia-smi.log &
 NVIDIA_SMI_PID=$!
-
-# start the nvdashboard server in the background
-NVDASHBOARD_PORT=8889
-python -m jupyterlab_nvdashboard.server $NVDASHBOARD_PORT &
-NVDASHBOARD_PID=$!
-
 ...
-# kill off the GPU monitoring processes
-kill $NVIDIA_SMI_PID $NVDASHBOARD_PID
+# kill off the nvidia-smi process
+kill $NVIDIA_SMI_PID
 ...
 ```
 
@@ -180,10 +209,10 @@ be reused for arbitrary training jobs (at least those that following the workflo
 Finally, we submit the job to Ibex using the `sbatch` command.
  
 ```bash
-$ USER_EMAIL=your.name@kaust.edu.sa # don't forget to change this!
-$ JOB_NAME=horovod-single-node-benchmark
+$ USER_EMAIL= your.name@kaust.edu.sa # don't forget to change this!
+$ JOB_NAME=horovod-keras-single-node-benchmark
 $ mkdir ../results/$JOB_NAME
-$ TRAINING_SCRIPT=../src/horovod-example/train.py
+$ TRAINING_SCRIPT=../src/horovod-keras-example/train.py
 $ DATA_DIR=/local/reference/CV/ILSVR/classification-localization/data/jpeg
 $ sbatch --job-name $JOB_NAME --mail-user $USER_EMAIL --mail-type=ALL --export TRAINING_SCRIPT=$TRAINING_SCRIPT,DATA_DIR=$DATA_DIR horovod-single-node-job.sh
 ```
