@@ -6,6 +6,7 @@ channels:
   - defaults
 
 dependencies:
+  - captum=0.2
   - cudatoolkit=10.2
   - jupyterlab=2.2
   - jupyterlab-git=0.20
