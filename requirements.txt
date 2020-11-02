@@ -1,2 +1,2 @@
-jupyterlab-nvdashboard==0.3.*
+jupyterlab-nvdashboard==0.4.*
 jupyter-tensorboard==0.2.*
