@@ -1,2 +1,1 @@
-jupyterlab-nvdashboard==0.4.*
-jupyter-tensorboard==0.2.*
+pandas-bokeh

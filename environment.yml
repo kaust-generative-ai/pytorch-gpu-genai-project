@@ -1,22 +1,42 @@
-name: null
+name: pytorch-env
 
 channels:
   - pytorch
+  - intel
   - conda-forge
   - defaults
 
 dependencies:
-  - captum=0.2
+  - bokeh
+  - gh
+  - git
+  - holoviews
+  - hvplot
+  - captum
   - cudatoolkit=10.2
-  - jupyterlab=2.2
-  - jupyterlab-git=0.20
-  - nodejs=14
-  - pip=20.2
+  - jupyterlab<3.0
+  - jupyterlab-git
+  - jupyter-lsp-python
+  - jupyterlab-nvdashboard
+  - matplotlib
+  - nodejs
+  - numba
+  - numpy
+  - optuna
+  - pandas
+  - panel
+  - pip
   - pip:
     - -r file:requirements.txt
-  - python=3.8
-  - pytorch=1.7
-  - tensorboard=2.3
-  - torchaudio=0.7
-  - torchtext=0.8
-  - torchvision=0.8
+  - pyarrow
+  - python=3.7
+  - python-language-server
+  - pytorch=1.8
+  - pytorch-lightning
+  - scipy
+  - tensorboard
+  - torchaudio
+  - torchtext
+  - torchvision
+  - wandb
+  - xeus-python
