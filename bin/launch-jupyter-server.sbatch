@@ -12,4 +12,4 @@
 #SBATCH --error=bin/%x-%j-slurm.err
 
 # use srun to launch Jupyter server in order to reserve a port
-srun --resv-ports=1 $PWD/bin/launch-jupyter-server.srun
+srun --resv-ports=1 ./bin/launch-jupyter-server.srun
