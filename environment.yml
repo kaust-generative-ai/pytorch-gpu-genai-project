@@ -14,11 +14,13 @@ dependencies:
   - hvplot
   - captum
   - cudatoolkit=10.2
+  - ipywidgets
   - jupyterlab<3.0
   - jupyterlab-git
-  - jupyter-lsp-python
   - jupyterlab-nvdashboard
-  - matplotlib
+  - jupyter-lsp-python
+  - matplotlib=3.1
+  - matplotlib-base=3.1
   - nodejs
   - numba
   - numpy
@@ -33,6 +35,7 @@ dependencies:
   - python-language-server
   - pytorch=1.8
   - pytorch-lightning
+  - scikit-learn
   - scipy
   - tensorboard
   - torchaudio
