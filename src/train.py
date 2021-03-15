@@ -1,3 +1,4 @@
+import os
 import pathlib
 
 from sklearn import metrics
@@ -22,6 +23,10 @@ RESIZE_SIZE = 224
 SEED = 42
 TQDM_DISABLE = True
 
+
+# create the output directory
+if not OUTPUT_DIR.exists():
+    os.mkdir(OUTPUT_DIR)
 
 # set seed for reproducibility
 torch.manual_seed(SEED)
