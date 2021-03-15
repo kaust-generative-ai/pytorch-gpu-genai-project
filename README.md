@@ -104,7 +104,7 @@ as a job on the debug partition via Slurm. For your convenience a Slurm job scri
 as follows.
 
 ```bash
-sbach ./bin/create-conda-env.sbatch
+sbatch ./bin/create-conda-env.sbatch
 ```
 
 ### Listing the full contents of the Conda environment
