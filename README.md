@@ -25,8 +25,7 @@ Project organization is based on ideas from [_Good Enough Practices for Scientif
 
 Installing the NVIDIA CUDA Toolkit manually is only required if your project needs to use the `nvcc` compiler. 
 Note that even if you have not written any custom CUDA code that needs to be compiled with `nvcc`, if your project 
-uses packages such as [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/) that include custom 
-CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
+uses packages that include custom CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
 
 If you don't need `nvcc`, then you can skip this section as `conda` will install a `cudatoolkit` package 
 which includes all the necessary runtime CUDA dependencies (but not the `nvcc` compiler).
@@ -95,6 +94,17 @@ as follows.
 
 ```bash
 ./bin/create-conda-env.sh
+```
+
+### Ibex
+
+The most efficient way to build Conda environments on Ibex is to launch the environment creation script 
+as a job on the debug partition via Slurm. For your convenience a Slurm job script 
+`./bin/create-conda-env.sbatch` is included. The script should be run from the project root directory 
+as follows.
+
+```bash
+sbatch ./bin/create-conda-env.sbatch
 ```
 
 ### Listing the full contents of the Conda environment

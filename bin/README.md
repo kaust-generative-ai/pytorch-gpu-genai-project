@@ -43,7 +43,7 @@ To connect to the compute node on Ibex running your Jupyter server, you need to 
 to a login node on Ibex using a command similar to the following.
 
 ```
-ssh -L ${JUPYTER_PORT}:${IBEX_NODE}:${JUPYTER_PORT} ${USER}@ilogin.ibex.kaust.edu.sa
+ssh -L ${JUPYTER_PORT}:${IBEX_NODE}:${JUPYTER_PORT} ${USER}@glogin.ibex.kaust.edu.sa
 ```
 
 The exact command for your job can be copied from the `./bin/launch-jupyter-server-$SLURM_JOB_ID-slurm.err` file.
