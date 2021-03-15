@@ -14,7 +14,7 @@ To connect to the compute node ${IBEX_NODE} on Ibex running your Jupyter server,
 you need to create an ssh tunnel from your local machine to login node on Ibex 
 using the following command.
 
-ssh -L ${JUPYTER_PORT}:${IBEX_NODE}:${JUPYTER_PORT} ${KAUST_USER}@ilogin.ibex.kaust.edu.sa 
+ssh -L ${JUPYTER_PORT}:${IBEX_NODE}:${JUPYTER_PORT} ${KAUST_USER}@glogin.ibex.kaust.edu.sa 
 
 Next, you need to copy the second url provided below and paste it into the browser 
 on your local machine.
