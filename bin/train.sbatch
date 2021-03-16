@@ -18,5 +18,12 @@ module purge
 ENV_PREFIX="$PROJECT_DIR"/env
 conda activate $ENV_PREFIX
 
+# use srun to launch NVDashboard server in order to reserve a port
+srun --resv-ports=1 ./bin/launch-nvdashboard-server.srun &
+NVDASHBOARD_PID=$!
+
 # launch the training script
 python "$1"
+
+# shutdown the NVDashboard server
+kill $NVDASHBOARD_PID
