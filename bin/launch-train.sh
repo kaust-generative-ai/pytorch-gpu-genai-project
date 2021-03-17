@@ -11,5 +11,5 @@ JOB_NAME=example-training-job
 mkdir -p "$PROJECT_DIR"/results/"$JOB_NAME"
 
 # launch the training job
-sbatch --job-name "$JOB_NAME" "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train.py 
+sbatch --job-name "$JOB_NAME" "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-argparse.py
 

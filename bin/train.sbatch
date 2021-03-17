@@ -23,7 +23,7 @@ srun --resv-ports=1 ./bin/launch-nvdashboard-server.srun &
 NVDASHBOARD_PID=$!
 
 # launch the training script
-python "$1"
+python "$1" --batch-size=32
 
 # shutdown the NVDashboard server
 kill $NVDASHBOARD_PID
