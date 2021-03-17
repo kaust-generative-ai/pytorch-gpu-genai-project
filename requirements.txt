@@ -1,2 +1,3 @@
+git+https://github.com/rapidsai/jupyterlab-nvdashboard.git
 pandas-bokeh
 torchmetrics
