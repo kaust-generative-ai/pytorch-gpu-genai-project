@@ -17,7 +17,6 @@ dependencies:
   - ipywidgets
   - jupyterlab<3.0
   - jupyterlab-git
-  - jupyterlab-nvdashboard
   - jupyter-lsp-python
   - matplotlib=3.1
   - matplotlib-base=3.1
