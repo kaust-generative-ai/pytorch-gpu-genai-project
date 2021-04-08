@@ -14,26 +14,55 @@ parser.add_argument("--batch-size",
                     default=256,
                     type=int,
                     help="Number of training samples per batch.")
+parser.add_argument("--data-dir",
+                    type=str,
+                    help="Path to directory containing the train, val, test data.")
+parser.add_argument("--dataloader-num-workers",
+                    required=True,
+                    type=int,
+                    help="Number of workers to use for loading data.")
+parser.add_argument("--dataloader-prefetch-factor",
+                    default=2,
+                    type=int,
+                    help="Number of data batches to prefetch per worker.")
+parser.add_argument("--disable-gpu",
+                    action="store_true",
+                    help="Disable GPU(s) for training and inference.")
 parser.add_argument("--num-training-epochs",
                     default=1,
                     type=int,
                     help="Number of training epochs.")
+parser.add_argument("--optimizer-learning-rate",
+                    default=1e-3,
+                    type=float,
+                    help="Learning rate for optimizer.")
+parser.add_argument("--optimizer-momentum",
+                    default=0.9,
+                    type=float,
+                    help="Momentum for optimizer.")
+parser.add_argument("--output-dir",
+                    type=str,
+                    help="Path to directory where output should be written.")
+parser.add_argument("--output-filename",
+                    default="model.pt",
+                    type=str,
+                    help="Filename for model checkpoint.")
+parser.add_argument("--seed",
+                    type=int,
+                    help="Seed used for pseudorandom number generation.")
 parser.add_argument("--tqdm-disable",
                     action="store_true",
                     help="Disables the training progress bar.")
 args = parser.parse_args()
 
-DATA_DIR = pathlib.Path("data/")
-DATALOADER_NUM_WORKERS = 6
-DEVICE = torch.device("cuda")
+
+# no need to expose these as command line args
+DATA_DIR = pathlib.Path(args.data_dir)
+DEVICE = torch.device("cpu") if args.disable_gpu else torch.device("cuda")
 NUM_CLASSES = 10
-OPTIMIZER_LEARNING_RATE = 1e-3
-OPTIMIZER_MOMENTUM = 0.9
-OUTPUT_DIR = pathlib.Path("results/example-training-job/")
-OUTPUT_FILENAME = OUTPUT_DIR / "model.pt"
-PREFETCH_FACTOR = 2
+OUTPUT_DIR = pathlib.Path(args.output_dir)
+OUTPUT_FILEPATH = OUTPUT_DIR / args.output_filename
 RESIZE_SIZE = 224
-SEED = 42
 
 
 # create the output directory
@@ -41,7 +70,8 @@ if not OUTPUT_DIR.exists():
     os.mkdir(OUTPUT_DIR)
 
 # set seed for reproducibility
-torch.manual_seed(SEED)
+if args.seed is not None:
+    torch.manual_seed(args.seed)
 
 # create the train and test datasets
 _transform = transforms.Compose([
@@ -63,18 +93,18 @@ train_dataloader = (utils.data
                          .DataLoader(train_dataset,
                                      batch_size=args.batch_size,
                                      shuffle=True,
-                                     num_workers=DATALOADER_NUM_WORKERS,
+                                     num_workers=args.dataloader_num_workers,
                                      persistent_workers=True,
                                      pin_memory=True,
-                                     prefetch_factor=PREFETCH_FACTOR))
+                                     prefetch_factor=args.dataloader_prefetch_factor))
 test_dataloader = (utils.data
                         .DataLoader(test_dataset,
                                     batch_size=args.batch_size,
                                     shuffle=False,
-                                    num_workers=DATALOADER_NUM_WORKERS,
+                                    num_workers=args.dataloader_num_workers,
                                     persistent_workers=True,
                                     pin_memory=True,
-                                    prefetch_factor=PREFETCH_FACTOR))
+                                    prefetch_factor=args.dataloader_prefetch_factor))
 
 # define a model_fn, loss function, and an optimizer
 model_fn = models.resnet50(pretrained=False,
@@ -82,8 +112,8 @@ model_fn = models.resnet50(pretrained=False,
 model_fn.to(DEVICE)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model_fn.parameters(),
-                      lr=OPTIMIZER_LEARNING_RATE,
-                      momentum=OPTIMIZER_MOMENTUM)
+                      lr=args.optimizer_learning_rate,
+                      momentum=args.optimizer_momentum)
 
 # train the model
 print("Training started...")
@@ -106,7 +136,7 @@ for epoch in range(args.num_training_epochs):
 print("...training finished!")
 
 # save the trained model
-torch.save(model_fn.state_dict(), OUTPUT_FILENAME)
+torch.save(model_fn.state_dict(), OUTPUT_FILEPATH)
 
 # compute the predications on the test data
 batch_targets = []

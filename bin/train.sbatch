@@ -2,7 +2,7 @@
 #SBATCH --time=2:00:00
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=v100:1
-#SBATCH --cpus-per-gpu=6  
+#SBATCH --cpus-per-gpu=4  
 #SBATCH --mem-per-gpu=64G 
 #SBATCH --constraint=intel
 #SBATCH --partition=debug 
@@ -23,7 +23,7 @@ srun --resv-ports=1 ./bin/launch-nvdashboard-server.srun &
 NVDASHBOARD_PID=$!
 
 # launch the training script
-python "$1" --batch-size=32
+python "$@"
 
 # shutdown the NVDashboard server
 kill $NVDASHBOARD_PID
