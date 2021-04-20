@@ -15,6 +15,7 @@ parser.add_argument("--batch-size",
                     type=int,
                     help="Number of training samples per batch.")
 parser.add_argument("--data-dir",
+                    required=True,
                     type=str,
                     help="Path to directory containing the train, val, test data.")
 parser.add_argument("--dataloader-num-workers",
@@ -41,6 +42,7 @@ parser.add_argument("--optimizer-momentum",
                     type=float,
                     help="Momentum for optimizer.")
 parser.add_argument("--output-dir",
+                    required=True,
                     type=str,
                     help="Path to directory where output should be written.")
 parser.add_argument("--output-filename",
