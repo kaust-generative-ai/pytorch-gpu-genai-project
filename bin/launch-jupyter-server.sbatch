@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=v100:1
 #SBATCH --cpus-per-gpu=6  
-#SBATCH --mem-per-gpu=64G
+#SBATCH --mem=64G
 #SBATCH --constraint=intel 
 #SBATCH --partition=debug 
 #SBATCH --job-name=launch-jupyter-server
