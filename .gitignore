@@ -123,3 +123,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# ignore Slurm .out .err files for certain jobs
+bin/create-conda-env-*-slurm.out
+bin/create-conda-env-*-slurm.err
+bin/launch-jupyter-server-*-slurm.out
+bin/launch-jupyter-server-*-slurm.err
