@@ -21,41 +21,6 @@ Project organization is based on ideas from [_Good Enough Practices for Scientif
 9. Put project source code in the `src` directory.
 10. Name all files to reflect their content or function.
 
-## Installing NVIDIA CUDA Toolkit
-
-Installing the NVIDIA CUDA Toolkit manually is only required if your project needs to use the `nvcc` compiler. 
-Note that even if you have not written any custom CUDA code that needs to be compiled with `nvcc`, if your project 
-uses packages that include custom CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
-
-If you don't need `nvcc`, then you can skip this section as `conda` will install a `cudatoolkit` package 
-which includes all the necessary runtime CUDA dependencies (but not the `nvcc` compiler).
-
-### Workstation
-
-You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
-of the NVIDIA CUDA Toolkit installed on your workstation. For PyTorch you should install 
-[NVIDIA CUDA Toolkit 10.2](https://developer.nvidia.com/cuda-10.2-download-archive) 
-[(documentation)](https://docs.nvidia.com/cuda/archive/10.2/).
-
-After installing the appropriate version of the NVIDIA CUDA Toolkit you will need to set the 
-following environment variables.
-
-```bash
-$ export CUDA_HOME=/usr/local/cuda-10.2
-$ export PATH=$CUDA_HOME/bin:$PATH
-$ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
-```
-
-### Ibex
-
-Ibex users do not neet to install NVIDIA CUDA Toolkit as the relevant versions have already been 
-made available on Ibex by the Ibex Systems team. Users simply need to load the appropriate version 
-using the `module` tool. 
-
-```bash
-$ module load cuda/10.2.89
-```
-
 ## Building the Conda environment
 
 After adding any necessary dependencies that should be downloaded via `conda` to the 
@@ -65,7 +30,7 @@ directory by running the following commands.
 
 ```bash
 export ENV_PREFIX=$PWD/env
-conda env create --prefix $ENV_PREFIX --file environment.yml --force
+mamba env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
 Once the new environment has been created you can activate the environment with the following 
@@ -77,15 +42,6 @@ conda activate $ENV_PREFIX
 
 Note that the `ENV_PREFIX` directory is *not* under version control as it can always be re-created as 
 necessary.
-
-If you wish to use any JupyterLab extensions included in the `environment.yml` and `requirements.txt` 
-files then you need to activate the environment and rebuild the JupyterLab application using the 
-following commands to source the `postBuild` script.
-
-```bash
-conda activate $ENV_PREFIX # optional if environment already active
-source postBuild
-```
 
 For your convenience these commands have been combined in a shell script `./bin/create-conda-env.sh`. 
 Running the shell script will create the Conda environment, activate the Conda environment, and build 
@@ -123,12 +79,43 @@ after the environment has already been created, then you can re-create the envir
 following command.
 
 ```bash
-$ conda env create --prefix $ENV_PREFIX --file environment.yml --force
+$ mamba env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
-If you need to add (remove) any JupyterLab extensions, then it is best to re-run the environment 
-creation script `./bin/create-conda-env.sh` to make certain that JupyterLab extensions are properly 
-built.
+## Installing the NVIDIA CUDA Compiler (NVCC) (Optional)
+
+Installing the NVIDIA CUDA Toolkit manually is only required if your project needs to use the `nvcc` compiler. 
+Note that even if you have not written any custom CUDA code that needs to be compiled with `nvcc`, if your project 
+uses packages that include custom CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
+
+If you don't need `nvcc`, then you can skip this section as `conda` will install a `cudatoolkit` package 
+which includes all the necessary runtime CUDA dependencies (but not the `nvcc` compiler).
+
+### Workstation
+
+You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
+of the NVIDIA CUDA Toolkit installed on your workstation. If using the most recent versionf of PyTorch, then you 
+should install [NVIDIA CUDA Toolkit 11.1](https://developer.nvidia.com/cuda-11.1.1-download-archive) 
+[(documentation)](https://docs.nvidia.com/cuda/archive/11.1.1/).
+
+After installing the appropriate version of the NVIDIA CUDA Toolkit you will need to set the 
+following environment variables.
+
+```bash
+$ export CUDA_HOME=/usr/local/cuda-11.1
+$ export PATH=$CUDA_HOME/bin:$PATH
+$ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+```
+
+### Ibex
+
+Ibex users do not neet to install NVIDIA CUDA Toolkit as the relevant versions have already been 
+made available on Ibex by the Ibex Systems team. Users simply need to load the appropriate version 
+using the `module` tool. 
+
+```bash
+$ module load cuda/11.0.1
+```
 
 ## Using Docker
 
