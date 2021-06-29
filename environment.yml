@@ -2,7 +2,6 @@ name: pytorch-env
 
 channels:
   - pytorch
-  - intel
   - conda-forge
   - defaults
 
@@ -20,9 +19,7 @@ dependencies:
   - jupyterlab-git
   - jupyterlab-nvdashboard
   - jupyterlab-lsp
-  - matplotlib=3.1
-  - matplotlib-base=3.1
-  - nodejs
+  - matplotlib
   - numba
   - numpy
   - optuna
@@ -32,7 +29,7 @@ dependencies:
   - pip:
     - -r file:requirements.txt
   - pyarrow
-  - python=3.7
+  - python=3.9
   - python-language-server
   - pytorch=1.9
   - pytorch-lightning
