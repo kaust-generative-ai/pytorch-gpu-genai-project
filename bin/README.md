@@ -81,19 +81,18 @@ are common to all machine learning jobs on Ibex.
 
 ### Request resources from Slurm
 
-You will request resources for your job using Slurm headers. The headers below request 4 Intel CPU cores, 36G of 
-CPU memory for 2 hours. Requesting only Intel CPU cores is important because the Conda environment has been optimized 
-for performance on Intel CPUs. Most Scikit-Learn algorithms are parallelized and by default will take advantage of all 
-available CPUs therefore you will typically want to request more than one CPU for your Scikit-Learn training jobs. You 
-should typically request at most 9G of CPU memory per CPU (each Intel node has 40 CPUs and roughly 366G of usable CPU 
-memory which works out to a little more than 9G per CPU).    
+You will request resources for your job using Slurm headers. It is important to request a balanced allocation of CPUs, GPUs, 
+and CPU memory in order to insure good overall job performance. You should typically request resources that are roughly 
+proportional to the amount of GPUs you are requesting. Most of our nodes have 8 V100 GPUs, 48 CPU cores, and 748 GB of CPU 
+memory. The headers below request 6 Intel CPU cores per NVIDIA V100 GPU, and 64G of CPU memory for 2 hours.   
 
 ```bash
 #!/bin/bash --login
-#SBATCH --time 2:00:00
-#SBATCH --cpus-per-task=4  
-#SBATCH --mem-per-cpu=9G 
-#SBATCH --constraint=intel
+#SBATCH --time=2:00:00
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=v100:1
+#SBATCH --cpus-per-gpu=6  
+#SBATCH --mem=64G
 #SBATCH --partition=batch 
 #SBATCH --mail-type=ALL
 #SBATCH --output=results/%x/%j-slurm.out
