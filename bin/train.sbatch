@@ -4,7 +4,6 @@
 #SBATCH --gpus-per-node=v100:1
 #SBATCH --cpus-per-gpu=6  
 #SBATCH --mem=64G 
-#SBATCH --constraint=intel
 #SBATCH --partition=debug 
 #SBATCH --mail-type=ALL
 #SBATCH --output=results/%x/%j-slurm.out
