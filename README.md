@@ -114,7 +114,7 @@ made available on Ibex by the Ibex Systems team. Users simply need to load the a
 using the `module` tool. 
 
 ```bash
-$ module load cuda/11.0.1
+$ module load cuda/11.1.1
 ```
 
 ## Using Docker
