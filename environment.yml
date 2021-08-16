@@ -27,7 +27,7 @@ dependencies:
   - panel
   - pip
   - pip:
-    - -r file:requirements.txt
+    - -r requirements.txt
   - pyarrow
   - python=3.9
   - python-language-server
