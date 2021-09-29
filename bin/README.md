@@ -65,7 +65,7 @@ be copied from the `launch-jupyter-server-$SLURM_JOB_ID-slurm.err`.
 
 The job script `launch-code-server.sbatch` launches a Microsoft Visual Studio (VS) Code server for development work. In order to 
 use VS Code server, you will first need to install the server package in your Ibex home directory following the instructions 
-provided on [GitHub](???). Once you have installed VS Code server, you can launch a server by running the following command from 
+provided on [GitHub](https://github.com/kaust-rccl/ibex-code-server-install). Once you have installed VS Code server, you can launch a server by running the following command from 
 the project root directory.
 
 ```bash
