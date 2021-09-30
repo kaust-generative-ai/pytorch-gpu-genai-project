@@ -61,6 +61,43 @@ http://127.0.0.1:$JUPYTER_PORT/lab?token=$JUPYTER_TOKEN
 The exact command for your job containing both your assigned `$JUPYTER_PORT` as well as your specific `$JUPYTER_TOKEN` can 
 be copied from the `launch-jupyter-server-$SLURM_JOB_ID-slurm.err`.
 
+## Launching a VS Code server for development work
+
+The job script `launch-code-server.sbatch` launches a Microsoft Visual Studio (VS) Code server for development work. In order to 
+use VS Code server, you will first need to install the server package in your Ibex home directory following the instructions 
+provided on [GitHub](https://github.com/kaust-rccl/ibex-code-server-install). Once you have installed VS Code server, you can launch a server by running the following command from 
+the project root directory.
+
+```bash
+sbatch ./bin/launch-code-server.sbatch
+```
+
+Once the job has started, you can inspect the `./bin/launch-code-server-$SLURM_JOB_ID-slurm.err` file where you will find 
+instructions on how to access the server running in your local browser.
+
+### SSH tunneling between your local machine and Ibex compute node(s)
+To connect to the compute node on Ibex running your VS Code server, you need to create an SSH tunnel from your local machine 
+to a login node on Ibex using a command similar to the following.
+
+```
+ssh -L ${JUPYTER_PORT}:${IBEX_NODE}:${JUPYTER_PORT} ${USER}@glogin.ibex.kaust.edu.sa
+```
+
+The exact command for your job can be copied from the `./bin/launch-code-server-$SLURM_JOB_ID-slurm.err` file.
+
+### Accessing the VS Code server from your local machine
+
+Once you have set up your SSH tunnel, in order to access the VS Code server from your local machine you need to copy the 
+second URL provided in the `launch-code-server-$SLURM_JOB_ID-slurm.err` file and paste it into the browser on your local 
+machine. The URL will look similar to the following.
+
+```
+localhost:$CODE_SERVER_PORT
+```
+
+The exact command for your job containing both your assigned `$CODE_SERVER_PORT` can be copied from the 
+`launch-code-server-$SLURM_JOB_ID-slurm.err`.
+
 ## Launching a training job via Slurm
 
 The `src` directory contains an example training script, `train.py`, that trains a classification pipeline on the 

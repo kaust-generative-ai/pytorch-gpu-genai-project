@@ -126,5 +126,13 @@ dmypy.json
 # ignore Slurm .out .err files for certain jobs
 bin/create-conda-env-*-slurm.out
 bin/create-conda-env-*-slurm.err
+bin/launch-code-server-*-slurm.out
+bin/launch-code-server-*-slurm.err
 bin/launch-jupyter-server-*-slurm.out
 bin/launch-jupyter-server-*-slurm.err
+
+# ignore DCGM reports
+dcgm/
+
+# ignore vscode settings
+.vscode/
