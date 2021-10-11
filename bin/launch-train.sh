@@ -6,16 +6,50 @@ set -e
 # script should be run from the project directory
 export PROJECT_DIR="$PWD"
 
+# data should be read from a data directory
+DATA_DIR="$PROJECT_DIR"/data
+
 # creates a separate directory for each job
 JOB_NAME=example-training-job
-mkdir -p "$PROJECT_DIR"/results/"$JOB_NAME"
+JOB_RESULTS_DIR="$PROJECT_DIR"/results/"$JOB_NAME"
+mkdir -p "$JOB_RESULTS_DIR"
 
-# launch the training job
-CPUS_PER_GPU=6
-sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU \
-    "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-argparse.py \
-        --dataloader-num-workers $CPUS_PER_GPU \
-        --data-dir data/ \
-        --output-dir results/$JOB_NAME/ \
-        --tqdm-disable
+# create a directory to store the checkpoints
+CHECKPOINTS_DIR="$JOB_RESULTS_DIR"/checkpoints
+mkdir -p "$CHECKPOINTS_DIR"
 
+# use a single file to track intermediate checkpoints
+CHECKPOINT_FILEPATH="$CHECKPOINTS_DIR"/checkpoint.pt
+
+# define number of training periods and training epochs (per period)
+NUM_TRAINING_PERIODS=10
+NUM_EPOCHS_PER_PERIOD=1
+
+# launch the training job for the initial period
+CPUS_PER_GPU=4
+TRAIN_JOBID=$(
+    sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU --parsable \
+        "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-checkpoint-restart.py \
+            --dataloader-num-workers $CPUS_PER_GPU \
+            --data-dir "$DATA_DIR" \
+            --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
+            --tqdm-disable \
+            --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
+)
+
+# queue the training jobs for the remaining periods
+for ((PERIOD=1;PERIOD<$NUM_TRAINING_PERIODS;PERIOD++))
+do
+
+    TRAIN_JOBID=$(
+        sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU --parsable --dependency=afterok:$TRAIN_JOBID --kill-on-invalid-dep=yes \
+            "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-checkpoint-restart.py \
+                --checkpoint-filepath "$CHECKPOINT_FILEPATH" \
+                --dataloader-num-workers $CPUS_PER_GPU \
+                --data-dir "$DATA_DIR" \
+                --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
+                --tqdm-disable \
+                --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
+    )
+
+done

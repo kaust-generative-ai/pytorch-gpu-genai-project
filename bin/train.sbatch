@@ -2,9 +2,9 @@
 #SBATCH --time=2:00:00
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=v100:1
-#SBATCH --cpus-per-gpu=6  
+#SBATCH --cpus-per-gpu=4  
 #SBATCH --mem=64G 
-#SBATCH --partition=debug 
+#SBATCH --partition=batch 
 #SBATCH --mail-type=ALL
 #SBATCH --output=results/%x/%j-slurm.out
 #SBATCH --error=results/%x/%j-slurm.err
