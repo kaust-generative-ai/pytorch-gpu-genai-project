@@ -1,6 +1,5 @@
 #!/bin/bash --login
 #SBATCH --time=2:00:00
-#SBATCH --nodes=1
 #SBATCH --gpus-per-node=v100:1
 #SBATCH --cpus-per-gpu=4  
 #SBATCH --mem=64G 
@@ -14,15 +13,14 @@ set -e
 
 # activate the conda environment
 module purge
-ENV_PREFIX="$PROJECT_DIR"/env
-conda activate $ENV_PREFIX
+conda activate "$1"
 
 # use srun to launch NVDashboard server in order to reserve a port
 srun --resv-ports=1 ./bin/launch-nvdashboard-server.srun &
 NVDASHBOARD_PID=$!
 
 # launch the training script
-python "$@"
+python "${@:2}"
 
 # shutdown the NVDashboard server
 kill $NVDASHBOARD_PID

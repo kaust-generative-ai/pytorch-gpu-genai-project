@@ -4,7 +4,10 @@
 set -e
 
 # script should be run from the project directory
-export PROJECT_DIR="$PWD"
+PROJECT_DIR="$PWD"
+
+# path to Conda environment
+ENV_PREFIX="$PROJECT_DIR"/env
 
 # data should be read from a data directory
 DATA_DIR="$PROJECT_DIR"/data
@@ -29,12 +32,13 @@ NUM_EPOCHS_PER_PERIOD=1
 CPUS_PER_GPU=4
 TRAIN_JOBID=$(
     sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU --parsable \
-        "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-checkpoint-restart.py \
-            --dataloader-num-workers $CPUS_PER_GPU \
-            --data-dir "$DATA_DIR" \
-            --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
-            --tqdm-disable \
-            --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
+        "$PROJECT_DIR"/bin/train.sbatch "$ENV_PREFIX" \
+            "$PROJECT_DIR"/src/train-checkpoint-restart.py \
+                --dataloader-num-workers $CPUS_PER_GPU \
+                --data-dir "$DATA_DIR" \
+                --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
+                --tqdm-disable \
+                --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
 )
 
 # queue the training jobs for the remaining periods
@@ -43,13 +47,14 @@ do
 
     TRAIN_JOBID=$(
         sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU --parsable --dependency=afterok:$TRAIN_JOBID --kill-on-invalid-dep=yes \
-            "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/src/train-checkpoint-restart.py \
-                --checkpoint-filepath "$CHECKPOINT_FILEPATH" \
-                --dataloader-num-workers $CPUS_PER_GPU \
-                --data-dir "$DATA_DIR" \
-                --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
-                --tqdm-disable \
-                --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
+            "$PROJECT_DIR"/bin/train.sbatch "$ENV_PREFIX" \
+                "$PROJECT_DIR"/src/train-checkpoint-restart.py \
+                    --checkpoint-filepath "$CHECKPOINT_FILEPATH" \
+                    --dataloader-num-workers $CPUS_PER_GPU \
+                    --data-dir "$DATA_DIR" \
+                    --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
+                    --tqdm-disable \
+                    --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
     )
 
 done
