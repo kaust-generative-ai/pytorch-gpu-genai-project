@@ -41,6 +41,9 @@ TRAIN_JOBID=$(
                 --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
 )
 
+# store the most recent checkpoint
+cp "$CHECKPOINT_FILEPATH" "$CHECKPOINTS_DIR"/most-recent-checkpoint.pt
+
 # queue the training jobs for the remaining periods
 for ((PERIOD=1;PERIOD<$NUM_TRAINING_PERIODS;PERIOD++))
 do
@@ -49,12 +52,15 @@ do
         sbatch --job-name "$JOB_NAME" --cpus-per-gpu $CPUS_PER_GPU --parsable --dependency=afterok:$TRAIN_JOBID --kill-on-invalid-dep=yes \
             "$PROJECT_DIR"/bin/train.sbatch "$ENV_PREFIX" \
                 "$PROJECT_DIR"/src/train-checkpoint-restart.py \
-                    --checkpoint-filepath "$CHECKPOINT_FILEPATH" \
+                    --checkpoint-filepath "$CHECKPOINTS_DIR"/most-recent-checkpoint.pt \
                     --dataloader-num-workers $CPUS_PER_GPU \
                     --data-dir "$DATA_DIR" \
                     --num-training-epochs $NUM_EPOCHS_PER_PERIOD \
                     --tqdm-disable \
                     --write-checkpoint-to "$CHECKPOINT_FILEPATH" \
     )
+
+    # store the most recent checkpoint
+    cp "$CHECKPOINT_FILEPATH" "$CHECKPOINTS_DIR"/most-recent-checkpoint.pt
 
 done
