@@ -82,40 +82,6 @@ following command.
 $ mamba env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
-## Installing the NVIDIA CUDA Compiler (NVCC) (Optional)
-
-Installing the NVIDIA CUDA Toolkit manually is only required if your project needs to use the `nvcc` compiler. 
-Note that even if you have not written any custom CUDA code that needs to be compiled with `nvcc`, if your project 
-uses packages that include custom CUDA extensions for PyTorch then you will need `nvcc` installed in order to build these packages.
-
-If you don't need `nvcc`, then you can skip this section as `conda` will install a `cudatoolkit` package 
-which includes all the necessary runtime CUDA dependencies (but not the `nvcc` compiler).
-
-### Workstation
-
-You will need to have the [appropriate version](https://developer.nvidia.com/cuda-toolkit-archive) 
-of the NVIDIA CUDA Toolkit installed on your workstation. If using the most recent versionf of PyTorch, then you 
-should install [NVIDIA CUDA Toolkit 11.1](https://developer.nvidia.com/cuda-11.1.1-download-archive) 
-[(documentation)](https://docs.nvidia.com/cuda/archive/11.1.1/).
-
-After installing the appropriate version of the NVIDIA CUDA Toolkit you will need to set the 
-following environment variables.
-
-```bash
-$ export CUDA_HOME=/usr/local/cuda-11.1
-$ export PATH=$CUDA_HOME/bin:$PATH
-$ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
-```
-
-### Ibex
-
-Ibex users do not neet to install NVIDIA CUDA Toolkit as the relevant versions have already been 
-made available on Ibex by the Ibex Systems team. Users simply need to load the appropriate version 
-using the `module` tool. 
-
-```bash
-$ module load cuda/11.1.1
-```
 
 ## Using Docker
 
