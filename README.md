@@ -1,6 +1,6 @@
-# pytorch-gpu-data-science-project
+# pytorch-gpu-genai-project
 
-Repository containing scaffolding for a Python 3-based data science project with GPU acceleration using the [PyTorch](https://pytorch.org/) ecosystem. 
+Repository containing scaffolding for a Python 3-based generative AI project with GPU acceleration using the [PyTorch](https://pytorch.org/) ecosystem. 
 
 ## Creating a new project from this template
 
