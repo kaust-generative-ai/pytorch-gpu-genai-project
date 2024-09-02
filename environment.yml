@@ -2,44 +2,32 @@ name: pytorch-env
 
 channels:
   - pytorch
+  - nvidia
   - conda-forge
   - defaults
 
 dependencies:
-  - bokeh
-  - captum
-  - cudatoolkit=11.1
-  - datashader
+  - accelerate
+  - datasets
   - gh
   - git
-  - holoviews
-  - hvplot
   - ipywidgets
+  - jupyter-ai
   - jupyterlab
   - jupyterlab-git
   - jupyterlab-nvdashboard
   - jupyterlab-lsp
-  - matplotlib
-  - numba
-  - numpy
-  - optuna
-  - pandas
-  - panel
   - pip
   - pip:
     - -r requirements.txt
   - pyarrow
-  - python=3.9
+  - python
+  - python-dotenv
   - python-language-server
-  - pytorch=1.9
+  - pytorch
   - pytorch-lightning
-  - pyviz_comms
-  - scikit-learn
-  - scipy
   - tensorboard
-  - torchaudio
   - torchmetrics
-  - torchtext
-  - torchvision
+  - transformers
   - wandb
-  - xeus-python
+  
