@@ -1,6 +1,6 @@
-## Using the `kaustvl/pytorch-gpu-data-science-project` image
+## Using the `kaust-generative-ai/pytorch-gpu-genai-project` image
 
-If you are not adding any additional dependencies to your project's `environment.yml` file, then you can run containers for your project based on the `kaustvl/pytorch-gpu--data-science-project` image hosted on DockerHub. Run the following command within your project's root directory to run a container for your project based on this existing Docker image.
+If you are not adding any additional dependencies to your project's `environment.yml` file, then you can run containers for your project based on the `kaust-generative-ai/pytorch-gpu-genai-project` image hosted on DockerHub. Run the following command within your project's root directory to run a container for your project based on this existing Docker image.
 
 ```bash
 $ docker container run \
@@ -14,7 +14,7 @@ $ docker container run \
   --volume ${pwd}/src:/home/$USER/app/src \
   --runtime nvidia \
   --publish 8888:8888 \
-  kaustvl/pytorch-gpu-data-science-project:latest
+  kaust-generative-ai/pytorch-gpu-genai-project:latest
 ```
 
 ## Building a new image for your project
