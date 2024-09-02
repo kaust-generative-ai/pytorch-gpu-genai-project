@@ -29,7 +29,7 @@ After adding any necessary dependencies that should be downloaded via `conda` to
 directory by running the following commands.
 
 ```bash
-export ENV_PREFIX=$PWD/conda-env
+export ENV_PREFIX=$PWD/env
 mamba env create --prefix $ENV_PREFIX --file environment.yml --force
 ```
 
